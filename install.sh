@@ -37,10 +37,10 @@ error()   { echo -e "${RED}[ERROR]${NC} $*"; exit 1; }
 header()  { echo -e "\n${BOLD}${CYAN}══════════════════════════════════════════${NC}"; echo -e "${BOLD}${CYAN}  $*${NC}"; echo -e "${BOLD}${CYAN}══════════════════════════════════════════${NC}\n"; }
 
 # ─────────────── КОНФИГУРАЦИЯ ───────────────
-DOTFILES_REPO="https://github.com/chezok/dotfiles.git"
+DOTFILES_REPO="https://github.com/CHEZ0K/dotfiles.git"
 DOTFILES_DIR="$HOME/dotfiles"
 USERNAME="chezok"
-HOSTNAME="cachyos"
+HOSTNAME="chezok"
 TIMEZONE="Europe/Moscow"
 LOCALE_LANG="en_US.UTF-8"
 LOCALE_RU="ru_RU.UTF-8"
@@ -409,12 +409,13 @@ EOF
     useradd -m -G wheel,audio,video,storage,optical,network,power -s /bin/bash "${USERNAME}" || true
     echo "${USERNAME}:${USER_PASS}" | chpasswd
 
-    # sudoers
+    # Настройка sudo для пользователя chezok
+    mkdir -p /etc/sudoers.d
+    echo "${USERNAME} ALL=(ALL:ALL) ALL" > "/etc/sudoers.d/${USERNAME}"
+    chmod 440 "/etc/sudoers.d/${USERNAME}"
     sed -i 's/^# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers
-    # Без пароля для wheel (удобно при установке пакетов)
-    # sed -i 's/^# %wheel ALL=(ALL:ALL) NOPASSWD: ALL/%wheel ALL=(ALL:ALL) NOPASSWD: ALL/' /etc/sudoers
 
-    ok "Пользователь ${USERNAME} создан."
+    ok "Пользователь ${USERNAME} создан с полными правами sudo."
 
     # ─── mkinitcpio ───
     header "Генерация initramfs..."
@@ -454,28 +455,25 @@ EOF
 
     ok "Все pacman пакеты установлены."
 
-    # ─── GRUB ───
+    # ─── GRUB (без quiet, без nowatchdog, без кастомного разрешения) ───
     header "Установка и настройка GRUB..."
 
     grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB --recheck
 
-    # Настройка /etc/default/grub
     cat > /etc/default/grub << 'EOF'
 GRUB_DEFAULT=0
 GRUB_TIMEOUT=5
 GRUB_DISTRIBUTOR="CachyOS"
-GRUB_CMDLINE_LINUX_DEFAULT="quiet loglevel=3 nowatchdog"
+GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3"
 GRUB_CMDLINE_LINUX=""
 GRUB_PRELOAD_MODULES="part_gpt part_msdos"
 GRUB_TIMEOUT_STYLE=menu
-GRUB_GFXMODE=1920x1080,auto
-GRUB_GFXPAYLOAD_LINUX=keep
 GRUB_DISABLE_RECOVERY=true
 EOF
 
     grub-mkconfig -o /boot/grub/grub.cfg
 
-    ok "GRUB установлен и настроен."
+    ok "GRUB установлен и настроен (логи загрузки полностью видны)."
 
     # ─── Службы ───
     header "Включение системных служб..."
@@ -506,53 +504,59 @@ CompositorCommand=weston --shell=kiosk
 SessionDir=/usr/share/wayland-sessions
 EOF
 
-    # ─── Подготовка домашней папки пользователя ───
-    header "Подготовка домашней папки..."
-
-    # Копируем скрипт для пост-установки
-    cp /install-arch.sh "/home/${USERNAME}/install-arch.sh"
-    chmod +x "/home/${USERNAME}/install-arch.sh"
-
-    # Копируем vars (без паролей root)
-    cat > "/home/${USERNAME}/.install-vars.env" << EOF
-USERNAME='${USERNAME}'
-HOSTNAME='${HOSTNAME}'
-DOTFILES_REPO='${DOTFILES_REPO}'
-EOF
-    chown "${USERNAME}:${USERNAME}" "/home/${USERNAME}/install-arch.sh" "/home/${USERNAME}/.install-vars.env"
-
     # ─── Установка yay (AUR helper) ───
     header "Установка yay..."
 
-    # Устанавливаем как пользователь
     su - "${USERNAME}" -c "
         cd /tmp
         git clone https://aur.archlinux.org/yay.git
         cd yay
         makepkg -si --noconfirm
-    " || warn "yay не установлен — установите вручную: cd /tmp/yay && makepkg -si"
+    " || warn "yay не установлен — проверьте подключение к сети"
 
     # ─── AUR пакеты ───
     header "Установка AUR пакетов..."
 
     install_aur_packages
 
-    # ─── Autologin для первого запуска (временно) ───
-    # Раскомментируйте если хотите автологин:
-    # mkdir -p /etc/sddm.conf.d
-    # cat >> /etc/sddm.conf.d/default.conf << EOF
-    # [Autologin]
-    # User=${USERNAME}
-    # Session=niri
-    # EOF
+    # ─── Клонирование и деплой дотфайлов СРАЗУ В CHROOT ───
+    header "Клонирование и деплой дотфайлов (сразу внутри chroot)..."
+
+    DOTFILES_DIR="/home/${USERNAME}/dotfiles"
+    su - "${USERNAME}" -c "git clone '${DOTFILES_REPO}' '${DOTFILES_DIR}'" || warn "Не удалось клонировать репо по сети"
+
+    if [[ -d "${DOTFILES_DIR}" ]]; then
+        info "Деплой конфигурационных файлов..."
+        DOTFILES_DIR="${DOTFILES_DIR}" USER="${USERNAME}" HOME="/home/${USERNAME}" deploy_dotfiles
+        DOTFILES_DIR="${DOTFILES_DIR}" deploy_sddm_theme
+        DOTFILES_DIR="${DOTFILES_DIR}" USER="${USERNAME}" HOME="/home/${USERNAME}" deploy_zen_css
+        deploy_xwayland_satellite
+
+        # Генерация первичной палитры pywal
+        if ls /home/${USERNAME}/67/*.jpg /home/${USERNAME}/67/*.png 2>/dev/null | head -1; then
+            WALL=$(ls /home/${USERNAME}/67/*.jpg /home/${USERNAME}/67/*.png 2>/dev/null | shuf | head -1)
+            su - "${USERNAME}" -c "wal -i '$WALL' --backend haishoku 2>/dev/null || wal -i '$WALL' 2>/dev/null || true"
+            ok "pywal палитра сгенерирована с обоями: $WALL"
+        fi
+
+        # Включение сокетов пользователя
+        mkdir -p "/home/${USERNAME}/.config/systemd/user/sockets.target.wants"
+        ln -sf "/usr/lib/systemd/user/pipewire.socket" "/home/${USERNAME}/.config/systemd/user/sockets.target.wants/pipewire.socket" 2>/dev/null || true
+        ln -sf "/usr/lib/systemd/user/pipewire-pulse.socket" "/home/${USERNAME}/.config/systemd/user/sockets.target.wants/pipewire-pulse.socket" 2>/dev/null || true
+        ln -sf "/usr/lib/systemd/user/foot-server.socket" "/home/${USERNAME}/.config/systemd/user/sockets.target.wants/foot-server.socket" 2>/dev/null || true
+
+        # Назначаем права пользователя chezok на все файлы
+        chown -R "${USERNAME}:${USERNAME}" "/home/${USERNAME}"
+        ok "Все дотфайлы, скрипты, обои и стили разложены по местам!"
+    fi
 
     # ─── Очистка ───
     rm -f /install-vars.env /install-arch.sh
 
     ok "════════════════════════════════════════════"
-    ok " CHROOT ФАЗА ЗАВЕРШЕНА!"
-    ok " Выйдите из chroot, размонтируйте и перезагрузитесь"
-    ok " После входа в систему: bash ~/install-arch.sh --deploy"
+    ok " УСТАНОВКА И ДЕПЛОЙ СИСТЕМЫ ПОЛНОСТЬЮ ЗАВЕРШЕНЫ!"
+    ok " Больше ничего делать не нужно!"
+    ok " Просто перезагрузитесь: reboot"
     ok "════════════════════════════════════════════"
 }
 
@@ -737,11 +741,13 @@ phase_deploy() {
 deploy_dotfiles() {
     header "Деплой конфигурационных файлов..."
 
+    local target_user="${USERNAME:-chezok}"
+    local target_home="/home/${target_user}"
     local df="$DOTFILES_DIR/dotfiles"
-    local cfg="$HOME/.config"
-    local bin="$HOME/.local/bin"
+    local cfg="$target_home/.config"
+    local bin="$target_home/.local/bin"
 
-    mkdir -p "$cfg" "$bin" "$HOME/.local/share"
+    mkdir -p "$cfg" "$bin" "$target_home/.local/share"
 
     # Функция безопасного копирования
     safe_copy() {
@@ -758,9 +764,8 @@ deploy_dotfiles() {
 
     # ─── Niri ───
     safe_copy "$df/niri" "$cfg/niri"
-    # Меняем hardcoded пути с chezok на текущего пользователя
-    if [[ "$USER" != "chezok" ]]; then
-        find "$cfg/niri" -type f -exec sed -i "s|/home/chezok|/home/${USER}|g" {} +
+    if [[ "$target_user" != "chezok" ]]; then
+        find "$cfg/niri" -type f -exec sed -i "s|/home/chezok|/home/${target_user}|g" {} +
     fi
 
     # ─── Vibepanel ───
@@ -811,7 +816,7 @@ deploy_dotfiles() {
 
     # ─── Bashrc ───
     if [[ -f "$df/bash/.bashrc" ]]; then
-        cp "$df/bash/.bashrc" "$HOME/.bashrc"
+        cp "$df/bash/.bashrc" "$target_home/.bashrc"
         ok "Скопировано: .bashrc"
     fi
 
@@ -824,28 +829,28 @@ deploy_dotfiles() {
 
     # ─── Обои (~/67/) ───
     if [[ -d "$df/wallpapers" ]]; then
-        mkdir -p "$HOME/67"
-        cp -r "$df/wallpapers/." "$HOME/67/"
+        mkdir -p "$target_home/67"
+        cp -r "$df/wallpapers/." "$target_home/67/"
         ok "Обои скопированы в ~/67/"
     fi
 
     # ─── Иконки ───
     if [[ -d "$df/themes/icons" ]]; then
-        mkdir -p "$HOME/.local/share/icons"
-        cp -r "$df/themes/icons/." "$HOME/.local/share/icons/"
+        mkdir -p "$target_home/.local/share/icons"
+        cp -r "$df/themes/icons/." "$target_home/.local/share/icons/"
         ok "Иконки скопированы"
     fi
 
     # ─── Курсор Furina ───
     if [[ -d "$df/themes/cursors" ]]; then
-        mkdir -p "$HOME/.local/share/icons/Furina"
-        cp -r "$df/themes/cursors/." "$HOME/.local/share/icons/Furina/"
+        mkdir -p "$target_home/.local/share/icons/Furina"
+        cp -r "$df/themes/cursors/." "$target_home/.local/share/icons/Furina/"
         ok "Курсор Furina скопирован"
     fi
 
     # Обновляем GTK иконки
     if command -v gtk-update-icon-cache &>/dev/null; then
-        gtk-update-icon-cache "$HOME/.local/share/icons" 2>/dev/null || true
+        gtk-update-icon-cache "$target_home/.local/share/icons" 2>/dev/null || true
     fi
 
     info "Дотфайлы задеплоены."
@@ -858,17 +863,17 @@ deploy_sddm_theme() {
     local dst="/usr/share/sddm/themes/silent"
 
     if [[ -d "$src" ]]; then
-        sudo mkdir -p "$dst"
-        sudo cp -r "$src/." "$dst/"
-        sudo chmod -R 755 "$dst"
+        mkdir -p "$dst"
+        cp -r "$src/." "$dst/"
+        chmod -R 755 "$dst"
         ok "SDDM тема 'silent' установлена."
     else
-        warn "SDDM тема не найдена в репозитории дотфайлов. Установите вручную."
+        warn "SDDM тема не найдена в репозитории дотфайлов."
     fi
 
     # Конфигурация SDDM
-    sudo mkdir -p /etc/sddm.conf.d
-    sudo tee /etc/sddm.conf.d/default.conf > /dev/null << 'EOF'
+    mkdir -p /etc/sddm.conf.d
+    cat > /etc/sddm.conf.d/default.conf << 'EOF'
 [Theme]
 Current=silent
 
@@ -886,6 +891,7 @@ EOF
 deploy_zen_css() {
     header "Настройка Zen Browser (userChrome.css)..."
 
+    local target_user="${USERNAME:-chezok}"
     local zen_css_src="$DOTFILES_DIR/dotfiles/zen-css/userChrome.css"
 
     if [[ ! -f "$zen_css_src" ]]; then
@@ -894,7 +900,7 @@ deploy_zen_css() {
     fi
 
     # Находим профиль Zen Browser
-    local zen_profiles_dir="$HOME/.config/zen"
+    local zen_profiles_dir="/home/${target_user}/.config/zen"
     if [[ -d "$zen_profiles_dir" ]]; then
         local profile_dir
         profile_dir=$(find "$zen_profiles_dir" -maxdepth 1 -name "*.Default Profile" -type d | head -1)
@@ -903,33 +909,33 @@ deploy_zen_css() {
             mkdir -p "$profile_dir/chrome"
             cp "$zen_css_src" "$profile_dir/chrome/userChrome.css"
             ok "userChrome.css установлен в: $profile_dir/chrome/"
-        else
-            warn "Профиль Zen Browser не найден. Запустите Zen Browser первый раз, затем скопируйте вручную:"
-            warn "  cp $zen_css_src ~/.config/zen/<ваш-профиль>/chrome/userChrome.css"
         fi
-    else
-        warn "Zen Browser ещё не запускался. После первого запуска выполните:"
-        info "  mkdir -p ~/.config/zen/<профиль>/chrome"
-        info "  cp $zen_css_src ~/.config/zen/<профиль>/chrome/userChrome.css"
     fi
+
+    # Сохраняем шаблон в ~/.config/zen для автоматического/ручного копирования
+    mkdir -p "/home/${target_user}/.config/zen"
+    cp "$zen_css_src" "/home/${target_user}/.config/zen/userChrome.css"
+    ok "userChrome.css сохранён в /home/${target_user}/.config/zen/userChrome.css"
 }
 
 deploy_xwayland_satellite() {
     header "Проверка xwayland-satellite..."
 
-    # xwayland-satellite должен быть установлен через pacman
+    local target_user="${USERNAME:-chezok}"
+    local niri_kdl="/home/${target_user}/.config/niri/config.kdl"
+
     if command -v xwayland-satellite &>/dev/null; then
-        ok "xwayland-satellite найден в PATH."
-        # Убеждаемся что niri config указывает на системный путь
-        if [[ -f "$HOME/.config/niri/config.kdl" ]]; then
-            local sys_path
-            sys_path=$(which xwayland-satellite)
-            sed -i "s|path \".*xwayland-satellite\"|path \"${sys_path}\"|g" "$HOME/.config/niri/config.kdl"
-            ok "Путь к xwayland-satellite обновлён: $sys_path"
+        local sys_path
+        sys_path=$(which xwayland-satellite)
+        ok "xwayland-satellite найден: $sys_path"
+        if [[ -f "$niri_kdl" ]]; then
+            sed -i "s|path \".*xwayland-satellite\"|path \"${sys_path}\"|g" "$niri_kdl"
+            ok "Путь в niri config обновлён."
+        else
+            warn "niri config.kdl не найден в $niri_kdl"
         fi
     else
-        warn "xwayland-satellite не найден в PATH!"
-        info "Установите: yay -S xwayland-satellite-git"
+        warn "xwayland-satellite не найден в PATH (будет собран через AUR)"
     fi
 }
 
