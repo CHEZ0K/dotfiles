@@ -405,14 +405,18 @@ EOF
     # Задаём пароль root
     echo "root:${ROOT_PASS}" | chpasswd
 
-    # Создаём пользователя без лишних групп
-    useradd -m -s /bin/bash "${USERNAME}" || true
+    # Создаём пользователя со всеми системными группами
+    useradd -m -G wheel,audio,video,storage,optical,network,power -s /bin/bash "${USERNAME}" || true
     echo "${USERNAME}:${USER_PASS}" | chpasswd
 
-    # Добавляем строку прямо в /etc/sudoers
-    echo "${USERNAME} ALL=(ALL:ALL) ALL" >> /etc/sudoers
+    # Правильная настройка sudo: файл в /etc/sudoers.d/ + группа wheel + запись в /etc/sudoers
+    mkdir -p /etc/sudoers.d
+    echo "${USERNAME} ALL=(ALL:ALL) ALL" > "/etc/sudoers.d/${USERNAME}"
+    chmod 440 "/etc/sudoers.d/${USERNAME}"
+    sed -i 's/^# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers
+    grep -q "^${USERNAME} " /etc/sudoers 2>/dev/null || echo "${USERNAME} ALL=(ALL:ALL) ALL" >> /etc/sudoers
 
-    ok "Пользователь ${USERNAME} создан и добавлен в /etc/sudoers."
+    ok "Пользователь ${USERNAME} создан (группы wheel, audio, video + sudoers)."
 
     # ─── mkinitcpio ───
     header "Генерация initramfs..."
@@ -525,6 +529,7 @@ EOF
     if [[ -d "${DOTFILES_DIR}" ]]; then
         info "Деплой конфигурационных файлов..."
         DOTFILES_DIR="${DOTFILES_DIR}" USER="${USERNAME}" HOME="/home/${USERNAME}" deploy_dotfiles
+        configure_display_resolution
         DOTFILES_DIR="${DOTFILES_DIR}" deploy_sddm_theme
         DOTFILES_DIR="${DOTFILES_DIR}" USER="${USERNAME}" HOME="/home/${USERNAME}" deploy_zen_css
         deploy_xwayland_satellite
@@ -933,6 +938,84 @@ deploy_xwayland_satellite() {
         fi
     else
         warn "xwayland-satellite не найден в PATH (будет собран через AUR)"
+    fi
+}
+
+configure_display_resolution() {
+    header "Проверка и адаптация разрешения экрана..."
+
+    local target_user="${USERNAME:-chezok}"
+    local niri_kdl="/home/${target_user}/.config/niri/config.kdl"
+    local connector=""
+    local mode=""
+    local width=1920
+    local height=1080
+    local scale=1.0
+
+    # Сканируем подключенные дисплеи через sysfs
+    for d in $(find /sys/class/drm/ -maxdepth 1 -name "card*-*" 2>/dev/null | sort); do
+        if [[ -f "$d/status" ]]; then
+            local status
+            status=$(cat "$d/status" 2>/dev/null | tr -d '[:space:]')
+            if [[ "$status" == "connected" ]]; then
+                connector=$(basename "$d" | sed -E 's/^card[0-9]+-//')
+                if [[ -f "$d/modes" ]]; then
+                    mode=$(head -n 1 "$d/modes" 2>/dev/null | tr -d '[:space:]')
+                fi
+                info "Обнаружен подключенный монитор: $connector (режим: $mode)"
+                break
+            fi
+        fi
+    done
+
+    # Извлекаем ширину и высоту
+    if [[ -n "$mode" && "$mode" =~ ^([0-9]+)x([0-9]+) ]]; then
+        width="${BASH_REMATCH[1]}"
+        height="${BASH_REMATCH[2]}"
+    fi
+
+    # Определяем оптимальный масштаб (scale) под размер экрана
+    if [[ "$connector" =~ ^eDP ]]; then
+        # Встроенный экран ноутбука
+        if (( width >= 2560 )); then
+            scale=1.75
+        elif (( width >= 1920 )); then
+            scale=1.5
+        else
+            scale=1.0
+        fi
+    else
+        # Внешний монитор (HDMI / DisplayPort)
+        if (( width >= 3840 )); then
+            scale=2.0
+        elif (( width >= 2560 )); then
+            scale=1.25
+        else
+            scale=1.0
+        fi
+    fi
+
+    # Рассчитываем логическую ширину cava под баром
+    local logical_width
+    logical_width=$(python3 -c "print(int(round($width / $scale)))" 2>/dev/null || echo "1280")
+
+    info "Адаптация Niri: монитор $connector, режим ${width}x${height}, масштаб $scale, Cava ${logical_width}px"
+
+    # Применяем в niri config.kdl
+    if [[ -f "$niri_kdl" ]]; then
+        if [[ -n "$connector" ]]; then
+            sed -i -E "s/output \"[^\"]+\"/output \"${connector}\"/" "$niri_kdl"
+        fi
+        if [[ -n "$mode" ]]; then
+            sed -i -E "s/mode \"[0-9]+x[0-9]+@[^\"]+\"/mode \"${mode}\"/" "$niri_kdl"
+        fi
+        sed -i -E "s/scale [0-9.]+/scale ${scale}/" "$niri_kdl"
+
+        # Обновляем ширину окна cavaunderbar чтобы не вылезало за экран
+        sed -i -E "s/min-width [0-9]+/min-width ${logical_width}/" "$niri_kdl"
+        sed -i -E "s/max-width [0-9]+/max-width ${logical_width}/" "$niri_kdl"
+
+        ok "Разрешение и масштаб успешно проверены и адаптированы."
     fi
 }
 
