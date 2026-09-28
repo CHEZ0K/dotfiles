@@ -230,6 +230,7 @@ phase_install() {
     mkdir -p /mnt/boot/efi
     mount "$EFI_PART" /mnt/boot/efi
 
+    lsblk -o NAME,SIZE,FSTYPE,LABEL,MOUNTPOINT "$TARGET_DISK"
     ok "Разделы смонтированы."
 
     # ─── Mirrorlist ───
@@ -237,9 +238,9 @@ phase_install() {
 
     # Используем reflector для выбора быстрых зеркал
     if command -v reflector &>/dev/null; then
-        reflector --country Russia,Germany,Finland --sort rate --save /etc/pacman.d/mirrorlist --latest 10 --protocol https
+        info "Поиск самых быстрых зеркал через reflector..."
+        reflector --country Russia,Germany,Finland --sort rate --save /etc/pacman.d/mirrorlist --latest 10 --protocol https || true
     else
-        # Ставим быстрые зеркала вручную
         cat > /etc/pacman.d/mirrorlist << 'MIRRORS'
 Server = https://geo.mirror.pkgbuild.com/$repo/os/$arch
 Server = https://mirror.yandex.ru/archlinux/$repo/os/$arch
@@ -248,27 +249,19 @@ Server = https://archlinux.vi-di.fr/$repo/os/$arch
 MIRRORS
     fi
 
+    # Включаем параллельную загрузку и цвета в pacman на ISO
+    sed -i 's/^#Color/Color/' /etc/pacman.conf
+    sed -i 's/^#ParallelDownloads = .*/ParallelDownloads = 5/' /etc/pacman.conf
+
     ok "Mirrorlist настроен."
 
-    # ─── Pacstrap (минимальная система) ───
+    # ─── Pacstrap (базовая система) ───
     header "Установка базовой системы (pacstrap)..."
 
     pacstrap -K /mnt \
         base base-devel linux-firmware \
-        linux-cachyos-bore linux-cachyos-bore-headers \
         grub efibootmgr xfsprogs \
-        networkmanager sudo git curl nano vim \
-        2>&1 | tail -5 || true
-
-    # Примечание: CachyOS пакеты пока не доступны — добавим репо внутри chroot
-    # Поэтому сначала ставим стандартные пакеты, потом добавляем CachyOS
-
-    # Делаем второй pacstrap с обычными пакетами без CachyOS-специфики
-    pacstrap /mnt \
-        base base-devel linux-firmware \
-        grub efibootmgr xfsprogs \
-        networkmanager sudo git curl nano vim \
-        2>/dev/null || true
+        networkmanager sudo git curl nano vim
 
     ok "Базовая система установлена."
 
@@ -276,7 +269,7 @@ MIRRORS
     header "Генерация fstab..."
 
     genfstab -U /mnt >> /mnt/etc/fstab
-    info "fstab:"
+    info "Сгенерированный fstab:"
     cat /mnt/etc/fstab
 
     ok "fstab сгенерирован."
@@ -412,12 +405,16 @@ EOF
     # ─── CachyOS ядро + основные пакеты ───
     header "Установка CachyOS ядра и основных пакетов..."
 
+    # Включаем красивый прогресс-бар, параллельную загрузку и цвета
+    sed -i 's/^#Color/Color/' /etc/pacman.conf
+    sed -i 's/^#ParallelDownloads = .*/ParallelDownloads = 5/' /etc/pacman.conf
+    grep -q "ILoveCandy" /etc/pacman.conf || sed -i '/^Color/a ILoveCandy' /etc/pacman.conf
+
     # Ядро CachyOS Bore
     pacman -S --noconfirm --needed \
         linux-cachyos-bore linux-cachyos-bore-headers \
         cachyos-settings scx-scheds \
-        linux-firmware \
-        2>/dev/null || warn "Некоторые CachyOS пакеты не найдены (проверьте репо)"
+        linux-firmware || warn "Некоторые CachyOS пакеты не найдены (проверьте репо)"
 
     ok "Ядро CachyOS Bore установлено."
 
@@ -612,7 +609,7 @@ install_pacman_packages() {
     for group in "${groups[@]}"; do
         info "Устанавливаем: $group"
         # shellcheck disable=SC2086
-        pacman -S --noconfirm --needed $group 2>/dev/null || warn "Некоторые пакеты из группы не найдены: $group"
+        pacman -S --noconfirm --needed $group || warn "Некоторые пакеты из группы не найдены: $group"
     done
 }
 
@@ -640,7 +637,7 @@ install_aur_packages() {
     for group in "${aur_groups[@]}"; do
         info "AUR: устанавливаем $group"
         # shellcheck disable=SC2086
-        su - "${USERNAME:-chezok}" -c "yay -S --noconfirm --needed $group 2>/dev/null" \
+        su - "${USERNAME:-chezok}" -c "yay -S --noconfirm --needed $group" \
             || warn "Некоторые AUR пакеты не установлены: $group"
     done
 }
