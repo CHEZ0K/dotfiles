@@ -1030,15 +1030,22 @@ phase_github() {
         ok "✓ Обои скопированы"
     fi
 
-    # SDDM тема
+    # SDDM тема (копируем без .git и без sudo)
     if [[ -d "/usr/share/sddm/themes/silent" ]]; then
-        sudo cp -r "/usr/share/sddm/themes/silent" "themes/sddm/"
+        mkdir -p "themes/sddm/silent"
+        python3 -c "
+import shutil, os
+src, dst = '/usr/share/sddm/themes/silent', 'themes/sddm/silent'
+if os.path.exists(dst): shutil.rmtree(dst)
+shutil.copytree(src, dst, ignore=lambda d, f: ['.git'] if '.git' in f else [])
+" 2>/dev/null || cp -r "/usr/share/sddm/themes/silent/." "themes/sddm/silent/"
+        rm -rf "themes/sddm/silent/.git"
         ok "✓ SDDM тема 'silent'"
     fi
 
-    # Иконки (большой размер — будут в LFS или исключены)
+    # Иконки
     if [[ -d "$HOME/.local/share/icons/Tela-circle-wal" ]]; then
-        info "Иконки Tela-circle-wal (112MB) — добавляем в Git LFS..."
+        info "Иконки Tela-circle-wal..."
         mkdir -p "themes/icons"
         cp -r "$HOME/.local/share/icons/Tela-circle-wal" "themes/icons/"
         ok "✓ Иконки Tela-circle-wal"
@@ -1049,6 +1056,9 @@ phase_github() {
         cp -r "$HOME/.local/share/icons/Furina" "themes/cursors/"
         ok "✓ Курсор Furina"
     fi
+
+    # Удаляем любые случайные вложенные .git папки
+    find . -name ".git" -not -path "./.git" -type d -exec rm -rf {} + 2>/dev/null || true
 
     # ─── Список пакетов ───
     header "Сохранение списка пакетов..."
@@ -1087,36 +1097,22 @@ dotfiles/scripts/nemo-archive-tool
 # Дотфайлы с секретами
 dotfiles/ssh/
 .install-vars.env
-
-# Git LFS tracking info (не игнорируем сами файлы, только атрибуты настроим отдельно)
-EOF
-
-    # ─── .gitattributes для LFS ───
-    cat > .gitattributes << 'EOF'
-# Обои и большие изображения — Git LFS
-dotfiles/wallpapers/* filter=lfs diff=lfs merge=lfs -text
-themes/icons/**/* filter=lfs diff=lfs merge=lfs -text
-themes/sddm/silent/backgrounds/* filter=lfs diff=lfs merge=lfs -text
-themes/cursors/**/* filter=lfs diff=lfs merge=lfs -text
 EOF
 
     # ─── README ───
     generate_readme
 
-    # ─── Git LFS ───
-    if command -v git-lfs &>/dev/null; then
-        git lfs install
-        ok "Git LFS инициализирован."
-    else
-        warn "git-lfs не установлен! Установите: sudo pacman -S git-lfs"
-        warn "Затем: cd ~/dotfiles && git lfs install"
+    # ─── Настройка Git пользователя ───
+    if [[ -z "$(git config user.name 2>/dev/null || true)" ]]; then
+        git config user.name "${USERNAME:-chezok}"
+        git config user.email "${USERNAME:-chezok}@users.noreply.github.com"
     fi
 
     # ─── Первый коммит ───
-    header "Создание первого коммита..."
+    header "Создание коммита..."
 
     git add -A
-    git commit -m "feat: initial dotfiles export from CachyOS ($(date +%Y-%m-%d))"
+    git commit -m "feat: dotfiles export from CachyOS ($(date +%Y-%m-%d))" || true
 
     # ─── Push ───
     header "Push на GitHub..."
@@ -1124,10 +1120,7 @@ EOF
     echo ""
     info "Для загрузки на GitHub:"
     info "1. Создайте репозиторий на github.com/chezok/dotfiles"
-    info "2. Добавьте remote:"
-    info "   git remote add origin git@github.com:chezok/dotfiles.git"
-    info "3. Включите Git LFS в настройках репозитория на GitHub"
-    info "4. Выполните push:"
+    info "2. Выполните push:"
     info "   git push -u origin main"
     echo ""
 
