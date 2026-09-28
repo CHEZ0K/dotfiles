@@ -929,6 +929,10 @@ ENVEOF
     # Симлинк для текстов песен yt-lyrics
     ln -sf "$bin/yt-lyrics" "$bin/sptlrx-yt" 2>/dev/null || true
 
+    # Системный симлинк для демона Cava
+    mkdir -p "/usr/local/bin"
+    ln -sf "$bin/cava_manager.sh" "/usr/local/bin/cava-daemon" 2>/dev/null || true
+
     # ─── Настройки интерфейса GNOME/GTK (gsettings) ───
     su - "${target_user}" -c "
         gsettings set org.gnome.desktop.interface gtk-theme 'Mint-Y-Dark' 2>/dev/null || true

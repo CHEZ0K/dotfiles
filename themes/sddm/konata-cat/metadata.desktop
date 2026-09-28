@@ -1,0 +1,12 @@
+[SddmGreeterTheme]
+Name=Konata Cat
+Description=Animated Cat Video SDDM Theme with Konata avatar and Niri aesthetics
+Author=chezok
+Type=sddm-theme
+Version=1.0
+Website=
+Screenshot=preview.gif
+MainScript=Main.qml
+ConfigFile=theme.conf
+Theme-Id=konata-cat
+Theme-API=2.0
