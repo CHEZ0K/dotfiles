@@ -1,0 +1,6 @@
+[Unit]
+Description=Enable Night Light
+
+[Service]
+Type=oneshot
+ExecStart=/home/chezok/.local/bin/nightlight on

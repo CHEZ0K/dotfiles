@@ -816,6 +816,9 @@ deploy_dotfiles() {
     # ─── Hypr (для скриптов, которые ссылаются на ~/.config/hypr) ───
     safe_copy "$df/hypr" "$cfg/hypr"
 
+    # ─── Systemd user services (foot-server, nightlight timers) ───
+    safe_copy "$df/systemd" "$cfg/systemd"
+
     # ─── Bashrc ───
     if [[ -f "$df/bash/.bashrc" ]]; then
         cp "$df/bash/.bashrc" "$target_home/.bashrc"
@@ -1109,6 +1112,7 @@ phase_github() {
     cp_config "$cfg/waylyrics"      "dotfiles/waylyrics/"
     cp_config "$cfg/quickshell"     "dotfiles/quickshell/"
     cp_config "$cfg/hypr"           "dotfiles/hypr/"
+    cp_config "$cfg/systemd"        "dotfiles/systemd/"
 
     # Zen Browser CSS (только userChrome.css, без личных данных!)
     local zen_profile
