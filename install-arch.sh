@@ -884,6 +884,38 @@ ENVEOF
     # ─── Темы GTK (~/.local/share/themes) ───
     safe_copy "$DOTFILES_DIR/themes/gtk" "$target_home/.local/share/themes"
 
+    # ─── Шрифты виджетов (~/.local/share/fonts: MaterialSymbols, weawow) ───
+    if [[ -d "$df/fonts" ]]; then
+        mkdir -p "$target_home/.local/share/fonts"
+        cp -r "$df/fonts/." "$target_home/.local/share/fonts/"
+        fc-cache -f "$target_home/.local/share/fonts" 2>/dev/null || true
+        ok "Шрифты интерфейса и виджетов скопированы"
+    fi
+
+    # ─── Локализация Nemo (~/.local/share/locale) ───
+    safe_copy "$df/locale" "$target_home/.local/share/locale"
+
+    # ─── Кастомные .desktop файлы (~/.local/share/applications) ───
+    safe_copy "$df/applications" "$target_home/.local/share/applications"
+
+    # ─── Системные звуки (~/.local/share/sounds) ───
+    safe_copy "$df/sounds" "$target_home/.local/share/sounds"
+
+    # ─── Ассоциации файлов и XDG директории ───
+    safe_copy "$df/mimeapps.list" "$cfg/mimeapps.list"
+    safe_copy "$df/user-dirs.dirs" "$cfg/user-dirs.dirs"
+
+    # ─── Pywal шаблоны (~/.config/wal) ───
+    safe_copy "$df/wal" "$cfg/wal"
+
+    # ─── Дополнительные конфиги (fuzzel, btop, illogical-impulse) ───
+    safe_copy "$df/fuzzel" "$cfg/fuzzel"
+    safe_copy "$df/btop" "$cfg/btop"
+    safe_copy "$df/illogical-impulse" "$cfg/illogical-impulse"
+
+    # Симлинк для текстов песен yt-lyrics
+    ln -sf "$bin/yt-lyrics" "$bin/sptlrx-yt" 2>/dev/null || true
+
     # ─── Настройки интерфейса GNOME/GTK (gsettings) ───
     su - "${target_user}" -c "
         gsettings set org.gnome.desktop.interface gtk-theme 'Mint-Y-Dark' 2>/dev/null || true
