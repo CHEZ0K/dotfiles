@@ -405,17 +405,14 @@ EOF
     # Задаём пароль root
     echo "root:${ROOT_PASS}" | chpasswd
 
-    # Создаём пользователя
-    useradd -m -G wheel,audio,video,storage,optical,network,power -s /bin/bash "${USERNAME}" || true
+    # Создаём пользователя без лишних групп
+    useradd -m -s /bin/bash "${USERNAME}" || true
     echo "${USERNAME}:${USER_PASS}" | chpasswd
 
-    # Настройка sudo для пользователя chezok
-    mkdir -p /etc/sudoers.d
-    echo "${USERNAME} ALL=(ALL:ALL) ALL" > "/etc/sudoers.d/${USERNAME}"
-    chmod 440 "/etc/sudoers.d/${USERNAME}"
-    sed -i 's/^# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers
+    # Добавляем строку прямо в /etc/sudoers
+    echo "${USERNAME} ALL=(ALL:ALL) ALL" >> /etc/sudoers
 
-    ok "Пользователь ${USERNAME} создан с полными правами sudo."
+    ok "Пользователь ${USERNAME} создан и добавлен в /etc/sudoers."
 
     # ─── mkinitcpio ───
     header "Генерация initramfs..."
