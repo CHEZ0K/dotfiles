@@ -884,9 +884,6 @@ ENVEOF
     # ─── Темы GTK (~/.local/share/themes) ───
     safe_copy "$DOTFILES_DIR/themes/gtk" "$target_home/.local/share/themes"
 
-    # ─── Custom sidebar (~/.config/custom-sidebar) ───
-    safe_copy "$df/custom-sidebar" "$cfg/custom-sidebar"
-
     # ─── Настройки интерфейса GNOME/GTK (gsettings) ───
     su - "${target_user}" -c "
         gsettings set org.gnome.desktop.interface gtk-theme 'Mint-Y-Dark' 2>/dev/null || true
