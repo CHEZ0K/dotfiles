@@ -841,17 +841,20 @@ deploy_dotfiles() {
     fi
 
     # ─── Иконки ───
-    if [[ -d "$df/themes/icons" ]]; then
-        mkdir -p "$target_home/.local/share/icons"
-        cp -r "$df/themes/icons/." "$target_home/.local/share/icons/"
+    if [[ -d "$DOTFILES_DIR/themes/icons" ]]; then
+        mkdir -p "$target_home/.local/share/icons" "/usr/share/icons"
+        cp -r "$DOTFILES_DIR/themes/icons/." "$target_home/.local/share/icons/"
+        cp -r "$DOTFILES_DIR/themes/icons/." "/usr/share/icons/" 2>/dev/null || true
         ok "Иконки скопированы"
     fi
 
     # ─── Курсор Furina ───
-    if [[ -d "$df/themes/cursors" ]]; then
-        mkdir -p "$target_home/.local/share/icons/Furina"
-        cp -r "$df/themes/cursors/." "$target_home/.local/share/icons/Furina/"
-        ok "Курсор Furina скопирован"
+    if [[ -d "$DOTFILES_DIR/themes/cursors/Furina" ]]; then
+        mkdir -p "$target_home/.local/share/icons/Furina" "$target_home/.icons/Furina" "/usr/share/icons/Furina"
+        cp -r "$DOTFILES_DIR/themes/cursors/Furina/." "$target_home/.local/share/icons/Furina/"
+        cp -r "$DOTFILES_DIR/themes/cursors/Furina/." "$target_home/.icons/Furina/" 2>/dev/null || true
+        cp -r "$DOTFILES_DIR/themes/cursors/Furina/." "/usr/share/icons/Furina/" 2>/dev/null || true
+        ok "Курсор Furina скопирован в .local/share/icons, .icons и /usr/share/icons"
     fi
 
     # ─── Аватарка (~/.face.icon) ───
@@ -859,6 +862,18 @@ deploy_dotfiles() {
 
     # ─── Дефолтный курсор (~/.icons/default) ───
     safe_copy "$DOTFILES_DIR/themes/cursors/default" "$target_home/.icons/default"
+    if [[ -d "$DOTFILES_DIR/themes/cursors/default" ]]; then
+        mkdir -p "/usr/share/icons/default"
+        cp -r "$DOTFILES_DIR/themes/cursors/default/." "/usr/share/icons/default/" 2>/dev/null || true
+    fi
+
+    # ─── Системные переменные окружения для курсора ───
+    touch /etc/environment
+    sed -i '/XCURSOR_THEME/d;/XCURSOR_SIZE/d' /etc/environment 2>/dev/null || true
+    cat >> /etc/environment << 'ENVEOF'
+XCURSOR_THEME=Furina
+XCURSOR_SIZE=32
+ENVEOF
 
     # ─── Действия Nemo (~/.local/share/nemo/actions) ───
     safe_copy "$df/nemo/actions" "$target_home/.local/share/nemo/actions"
@@ -909,6 +924,7 @@ deploy_sddm_theme() {
     cat > /etc/sddm.conf.d/default.conf << 'EOF'
 [Theme]
 Current=silent
+CursorTheme=Furina
 
 [General]
 InputMethod=qtvirtualkeyboard
