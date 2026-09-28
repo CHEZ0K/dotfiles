@@ -1,0 +1,98 @@
+#!/usr/bin/env python3
+import os
+import sys
+import json
+import re
+import concurrent.futures
+
+WAL_JSON = os.path.expanduser("~/.cache/wal/colors.json")
+STAMP_FILE = os.path.expanduser("~/.cache/wal/.icon_sync_stamp")
+ICON_DIR = os.path.expanduser("~/.local/share/icons/Tela-circle-wal")
+PATHS_CACHE = os.path.expanduser("~/.cache/wal/accent_svgs.txt")
+
+def main():
+    if not os.path.exists(WAL_JSON) or not os.path.exists(ICON_DIR):
+        return
+
+    wal_mtime = os.path.getmtime(WAL_JSON)
+    if os.path.exists(STAMP_FILE):
+        try:
+            with open(STAMP_FILE, "r") as f:
+                last_mtime = float(f.read().strip())
+            if wal_mtime <= last_mtime and "--force" not in sys.argv:
+                return
+        except Exception:
+            pass
+
+    with open(WAL_JSON, "r") as f:
+        data = json.load(f)
+
+    accent = (
+        data.get("colors", {}).get("color4") or
+        data.get("colors", {}).get("color5") or
+        data.get("special", {}).get("foreground") or
+        "#507376"
+    )
+    accent = accent.lower()
+    if not accent.startswith("#"):
+        accent = "#" + accent
+
+    if not os.path.exists(PATHS_CACHE):
+        import glob
+        matched = set()
+        for p in glob.glob(f"{ICON_DIR}/**/places/*.svg", recursive=True):
+            rp = os.path.realpath(p)
+            if not os.path.isfile(rp):
+                continue
+            with open(rp, "r", encoding="utf-8", errors="ignore") as f:
+                content = f.read()
+                if "ColorScheme-Highlight" in content or "fill=\"#" in content:
+                    matched.add(rp)
+        with open(PATHS_CACHE, "w") as f:
+            f.write("\n".join(sorted(matched)))
+        real_paths = matched
+    else:
+        with open(PATHS_CACHE, "r") as f:
+            real_paths = {os.path.realpath(line.strip()) for line in f if line.strip()}
+            real_paths = {p for p in real_paths if os.path.isfile(p)}
+
+    re_highlight = re.compile(r'(\.ColorScheme-Highlight\s*\{[^}]*color:\s*)#[0-9a-fA-F]{6}')
+    re_fill = re.compile(r'(class=["\']ColorScheme-Highlight["\'][^>]*fill=["\'])#[0-9a-fA-F]{6}')
+
+    def update_svg(path):
+        try:
+            with open(path, "r", encoding="utf-8", errors="ignore") as f:
+                content = f.read()
+            if not content:
+                return
+            new_content = re_highlight.sub(r'\g<1>' + accent, content)
+            new_content = re_fill.sub(r'\g<1>' + accent, new_content)
+            if new_content != content:
+                tmp = path + ".tmp"
+                with open(tmp, "w", encoding="utf-8") as f:
+                    f.write(new_content)
+                os.replace(tmp, path)
+        except Exception:
+            pass
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as ex:
+        list(ex.map(update_svg, real_paths))
+
+    # Touch directories and cache to notify GTK file monitors
+    try:
+        os.utime(ICON_DIR, None)
+        cache_path = os.path.join(ICON_DIR, "icon-theme.cache")
+        if os.path.exists(cache_path):
+            os.utime(cache_path, None)
+        for sub in ["scalable/places", "24/places", "22/places", "16/places"]:
+            sp = os.path.join(ICON_DIR, sub)
+            if os.path.exists(sp):
+                os.utime(sp, None)
+    except Exception:
+        pass
+
+    with open(STAMP_FILE, "w") as f:
+        f.write(str(wal_mtime))
+
+if __name__ == "__main__":
+    main()

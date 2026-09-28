@@ -1,0 +1,649 @@
+#!/usr/bin/env python3
+"""
+yt-lyrics: Real-time Word-by-Word & Line Synced Lyrics for YouTube & Browsers.
+Features:
+- Dual-Mode Synchronization:
+  1. Direct Browser Sync (via Tampermonkey / VOT-style exact video.currentTime on port 8974)
+  2. MPRIS Smart Clock (tracks playerctl position and continues playback seamlessly)
+- Asynchronous lyrics search (never freezes the terminal UI)
+- Intelligent title cleaning (removes YouTube video noise like '(Official Video)')
+- Word-by-word karaoke highlighting and central word box
+- Interactive keys: [q]uit, [+/-] offset sync, [0] reset, [Space] pause timer
+- Pipe modes: --word, --line, --json
+"""
+
+import sys
+import os
+import re
+import time
+import json
+import signal
+import shutil
+import select
+import termios
+import tty
+import threading
+import argparse
+import subprocess
+import urllib.request
+import urllib.parse
+import http.server
+import socketserver
+
+CACHE_DIR = os.path.expanduser("~/.cache/yt-lyrics")
+os.makedirs(CACHE_DIR, exist_ok=True)
+
+# ANSI Styling
+C_RESET = "\033[0m"
+C_BOLD = "\033[1m"
+C_DIM = "\033[2m"
+C_ITALIC = "\033[3m"
+C_GREEN = "\033[38;2;142;177;108m"    # Accent green
+C_CYAN = "\033[38;2;135;206;250m"
+C_YELLOW = "\033[38;2;246;144;116m"
+C_WHITE = "\033[97m"
+C_BG_ACCENT = "\033[48;2;45;83;146m"
+C_CLEAR = "\033[2J\033[H"
+C_HOME = "\033[H"
+C_HIDE_CURSOR = "\033[?25l"
+C_SHOW_CURSOR = "\033[?25h"
+
+# Global state for direct browser sync (Tampermonkey / Extension on port 8974)
+g_browser_sync = {
+    "time": 0.0,
+    "paused": False,
+    "duration": 0.0,
+    "last_seen": 0.0
+}
+
+
+class BrowserSyncHandler(http.server.BaseHTTPRequestHandler):
+    def do_POST(self):
+        try:
+            length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(length)
+            data = json.loads(body.decode("utf-8"))
+            if "time" in data:
+                g_browser_sync["time"] = float(data["time"])
+                g_browser_sync["paused"] = bool(data.get("paused", False))
+                g_browser_sync["duration"] = float(data.get("duration", 0.0))
+                g_browser_sync["last_seen"] = time.time()
+        except Exception:
+            pass
+
+        self.send_response(200)
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Content-Type", "text/plain")
+        self.end_headers()
+        self.wfile.write(b"OK")
+
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.end_headers()
+
+    def log_message(self, *args):
+        pass  # Suppress HTTP logging
+
+
+def start_browser_sync_server(port=8974):
+    try:
+        class ReusableTCPServer(socketserver.TCPServer):
+            allow_reuse_address = True
+        server = ReusableTCPServer(("127.0.0.1", port), BrowserSyncHandler)
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+    except Exception:
+        pass
+
+
+def clean_youtube_title(raw_title, raw_artist=""):
+    """
+    Cleans noisy YouTube titles:
+    "Mattyeux, Princess Chelsea - Sometimes (Official Music Video)" -> ("Mattyeux, Princess Chelsea", "Sometimes")
+    """
+    title = raw_title
+    patterns = [
+        r"[\(\[\{]\s*(?:official\s+)?(?:music\s+)?video(?:\s+remastered)?\s*[\)\]\}]",
+        r"[\(\[\{]\s*(?:official\s+)?audio\s*[\)\]\}]",
+        r"[\(\[\{]\s*(?:official\s+)?lyric(?:s)?(?:\s+video)?\s*[\)\]\}]",
+        r"[\(\[\{]\s*visualizer\s*[\)\]\}]",
+        r"[\(\[\{]\s*(?:4k|hd|hq|remastered|explicit|clean|audio|video|clip|mv)\s*[\)\]\}]",
+        r"[\(\[\{]\s*clip\s+officiel\s*[\)\]\}]",
+        r"[\(\[\{]\s*live(?:\s+session)?\s*[\)\]\}]",
+        r"\|.*$",
+        r"\b(?:ft\.|feat\.|featuring)\s+[^\-\(\)\[\]]+",
+    ]
+    for p in patterns:
+        title = re.sub(p, "", title, flags=re.IGNORECASE)
+
+    artist = raw_artist.strip()
+    track = title.strip()
+    for sep in [" - ", " – ", " — ", " // ", " : "]:
+        if sep in title:
+            parts = title.split(sep, 1)
+            artist = parts[0].strip()
+            track = parts[1].strip()
+            break
+
+    track = re.sub(r"[\(\[\{].*?[\)\]\}]", "", track).strip(" \"“'”")
+    return artist, track
+
+
+def fetch_synced_lyrics_worker(artist, title, callback):
+    """
+    Worker running in background thread to fetch synced lyrics from LRCLIB without blocking the UI.
+    """
+    cache_key = re.sub(r"[^\w\-_]", "_", f"{artist}_{title}".lower())[:100]
+    cache_file = os.path.join(CACHE_DIR, f"{cache_key}.json")
+    if os.path.exists(cache_file):
+        try:
+            with open(cache_file, "r", encoding="utf-8") as f:
+                cached = json.load(f)
+                callback(cached.get("syncedLyrics"), cached.get("trackName") or title, cached.get("artistName") or artist)
+                return
+        except Exception:
+            pass
+
+    queries = []
+    if artist and title:
+        queries.append(("https://lrclib.net/api/get?" + urllib.parse.urlencode({"artist_name": artist, "track_name": title}), False))
+        queries.append(("https://lrclib.net/api/search?" + urllib.parse.urlencode({"q": f"{artist} {title}".strip()}), True))
+    if title:
+        queries.append(("https://lrclib.net/api/search?" + urllib.parse.urlencode({"q": title.strip()}), True))
+
+    for url, is_list in queries:
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "YTLyrics/1.0 (Linux)"})
+            with urllib.request.urlopen(req, timeout=3.5) as resp:
+                data = json.loads(resp.read().decode())
+                if is_list:
+                    for item in data:
+                        if item.get("syncedLyrics"):
+                            res = (item["syncedLyrics"], item.get("trackName") or title, item.get("artistName") or artist)
+                            try:
+                                with open(cache_file, "w", encoding="utf-8") as f:
+                                    json.dump({"syncedLyrics": res[0], "trackName": res[1], "artistName": res[2]}, f)
+                            except Exception:
+                                pass
+                            callback(res[0], res[1], res[2])
+                            return
+                else:
+                    if data.get("syncedLyrics"):
+                        res = (data["syncedLyrics"], data.get("trackName") or title, data.get("artistName") or artist)
+                        try:
+                            with open(cache_file, "w", encoding="utf-8") as f:
+                                json.dump({"syncedLyrics": res[0], "trackName": res[1], "artistName": res[2]}, f)
+                        except Exception:
+                            pass
+                        callback(res[0], res[1], res[2])
+                        return
+        except Exception:
+            continue
+
+    callback(None, title, artist)
+
+
+def parse_lrc(lrc_text):
+    """
+    Parses LRC timestamps and builds line & word objects with interpolated timestamps.
+    """
+    time_regex = re.compile(r"\[(\d{2}):(\d{2})(?:\.(\d{2,3}))?\]")
+    raw_lines = []
+
+    for line in lrc_text.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        m = time_regex.match(line)
+        if m:
+            mins = int(m.group(1))
+            secs = int(m.group(2))
+            millis_str = m.group(3) or "00"
+            if len(millis_str) == 2:
+                millis = int(millis_str) * 10
+            else:
+                millis = int(millis_str)
+            timestamp = mins * 60 + secs + millis / 1000.0
+            content = line[m.end():].strip()
+            raw_lines.append((timestamp, content))
+
+    raw_lines.sort(key=lambda x: x[0])
+    lines = []
+
+    for i, (start_t, text) in enumerate(raw_lines):
+        if not text:
+            continue
+        if i + 1 < len(raw_lines):
+            end_t = raw_lines[i + 1][0]
+        else:
+            end_t = start_t + 4.0
+
+        duration = end_t - start_t
+        words_list = text.split()
+        if duration > 9.0:
+            duration = min(len(words_list) * 0.8, 7.0)
+            end_t = start_t + duration
+
+        word_objs = []
+        if words_list:
+            weights = [max(len(w), 2) for w in words_list]
+            tot_w = sum(weights)
+            cum_w = 0
+            for w, weight in zip(words_list, weights):
+                w_start = start_t + duration * (cum_w / tot_w)
+                cum_w += weight
+                w_end = start_t + duration * (cum_w / tot_w)
+                word_objs.append({"word": w, "start": w_start, "end": w_end})
+
+        lines.append({
+            "start": start_t,
+            "end": end_t,
+            "text": text,
+            "words": word_objs
+        })
+
+    return lines
+
+
+def get_player_info():
+    """
+    Retrieves current active MPRIS player metadata and position.
+    """
+    try:
+        players_res = subprocess.run(["playerctl", "-l"], capture_output=True, text=True, timeout=0.8)
+        if players_res.returncode != 0 or not players_res.stdout.strip():
+            return None
+
+        players = players_res.stdout.strip().splitlines()
+        browser_players = [p for p in players if any(b in p for b in ["firefox", "zen", "chromium", "brave", "chrome"])]
+        chosen = browser_players[0] if browser_players else players[0]
+
+        meta_res = subprocess.run(
+            ["playerctl", "-p", chosen, "metadata", "--format", "{{status}}|||{{position}}|||{{xesam:title}}|||{{xesam:artist}}|||{{mpris:length}}"],
+            capture_output=True, text=True, timeout=0.8
+        )
+        if meta_res.returncode != 0:
+            return None
+
+        parts = meta_res.stdout.strip().split("|||")
+        if len(parts) < 4:
+            return None
+
+        status = parts[0]
+        pos_raw = parts[1]
+        try:
+            position = float(pos_raw) / 1000000.0 if pos_raw else 0.0
+        except ValueError:
+            position = 0.0
+
+        raw_title = parts[2]
+        raw_artist = parts[3] if len(parts) > 3 else ""
+        length_raw = parts[4] if len(parts) > 4 else ""
+        length = float(length_raw) / 1000000.0 if (length_raw and length_raw.isdigit()) else 0.0
+
+        return {
+            "player": chosen,
+            "status": status,
+            "position": position,
+            "raw_title": raw_title,
+            "raw_artist": raw_artist,
+            "length": length
+        }
+    except Exception:
+        return None
+
+
+def format_time(sec):
+    sec = max(sec, 0.0)
+    m = int(sec // 60)
+    s = int(sec % 60)
+    return f"{m:02d}:{s:02d}"
+
+
+def render_tui(term_w, term_h, title, artist, status, position, length, lines, current_line_idx, current_word_idx, search_state, offset=0.0, is_browser_direct=False):
+    """
+    Renders word-by-word karaoke display with clear state indicators (Intro, Instrumental, Lyrics).
+    """
+    buf = []
+    buf.append(C_HOME)
+
+    # 1. Header
+    sym = "▶" if status == "Playing" else "⏸"
+    time_str = f"{format_time(position)}"
+    if length > 0:
+        time_str += f" / {format_time(length)}"
+        progress_ratio = min(max(position / length, 0.0), 1.0)
+        bar_len = max(min(term_w - len(time_str) - 30, 40), 8)
+        filled = int(bar_len * progress_ratio)
+        bar = "━" * filled + "🔘" + "─" * (bar_len - filled)
+    else:
+        bar = ""
+
+    sync_badge = f" {C_GREEN}[⚡ Direct Sync]{C_RESET}" if is_browser_direct else ""
+    offset_str = f" {C_YELLOW}[offset: {offset:+.1f}s]{C_RESET}" if abs(offset) > 0.05 else ""
+    header_text = f" {sym}  {C_BOLD}{artist}{C_RESET} — {C_CYAN}{title}{C_RESET}{sync_badge}{offset_str} "
+    header_pad = max((term_w - len(artist) - len(title) - 8) // 2, 0)
+    buf.append(" " * header_pad + header_text + "\n")
+    if bar:
+        bar_pad = max((term_w - len(bar) - len(time_str) - 2) // 2, 0)
+        buf.append(" " * bar_pad + f"{C_DIM}{bar} {time_str}{C_RESET}\n\n")
+    else:
+        buf.append(f"{C_DIM}{' ' * max((term_w - len(time_str)) // 2, 0)}{time_str}{C_RESET}\n\n")
+
+    avail_h = term_h - 10
+    top_space = max(avail_h // 3, 1)
+
+    # 2. Main Content Handling
+    if search_state == "searching":
+        buf.append("\n" * top_space)
+        msg = f"{C_CYAN}🔍 Searching lyrics for: {C_BOLD}{artist} - {title}{C_RESET}..."
+        buf.append(" " * max((term_w - 40) // 2, 0) + msg + "\n")
+        buf.append("\n" * (avail_h - top_space))
+    elif search_state == "not_found":
+        buf.append("\n" * top_space)
+        msg1 = f"{C_YELLOW}❌ Synced lyrics not found on LRCLIB for: {title}{C_RESET}"
+        msg2 = f"{C_DIM}Play another track or use YouTube with official song name.{C_RESET}"
+        buf.append(" " * max((term_w - len(title) - 40) // 2, 0) + msg1 + "\n")
+        buf.append(" " * max((term_w - 55) // 2, 0) + msg2 + "\n")
+        buf.append("\n" * (avail_h - top_space - 1))
+    elif not lines:
+        buf.append("\n" * top_space)
+        msg = f"{C_DIM}♪ Waiting for playback... ♪{C_RESET}"
+        buf.append(" " * max((term_w - 30) // 2, 0) + msg + "\n")
+        buf.append("\n" * (avail_h - top_space))
+    elif current_line_idx is None:
+        buf.append("\n" * top_space)
+        if lines and position < lines[0]["start"]:
+            intro_msg = f"{C_YELLOW}♪  [ Intro ]  ♪{C_RESET}"
+            upcoming_text = lines[0]["text"]
+            up_msg = f"{C_DIM}Next: {C_WHITE}\"{upcoming_text}\"{C_RESET}"
+            buf.append(" " * max((term_w - 18) // 2, 0) + intro_msg + "\n\n")
+            buf.append(" " * max((term_w - len(upcoming_text) - 8) // 2, 0) + up_msg + "\n")
+        else:
+            outro_msg = f"{C_DIM}♪  [ Outro / Instrumental ]  ♪{C_RESET}"
+            buf.append(" " * max((term_w - 30) // 2, 0) + outro_msg + "\n")
+        buf.append("\n" * max(avail_h - top_space - 2, 1))
+    else:
+        # Active lyric line
+        curr = lines[current_line_idx]
+        prev = lines[current_line_idx - 1] if current_line_idx > 0 else None
+        nxt = lines[current_line_idx + 1] if current_line_idx + 1 < len(lines) else None
+
+        buf.append("\n" * top_space)
+
+        # Previous line
+        if prev:
+            p_text = prev["text"]
+            p_pad = max((term_w - len(p_text)) // 2, 0)
+            buf.append(" " * p_pad + f"{C_DIM}{p_text}{C_RESET}\n\n")
+        else:
+            buf.append("\n\n")
+
+        # Current line (word-by-word highlight)
+        if curr.get("words"):
+            formatted_words = []
+            active_word_str = ""
+            for w_idx, w_obj in enumerate(curr["words"]):
+                w_text = w_obj["word"]
+                if w_idx == current_word_idx:
+                    active_word_str = w_text
+                    formatted_words.append(f"{C_BOLD}{C_GREEN}»{w_text}«{C_RESET}")
+                elif current_word_idx is not None and w_idx < current_word_idx:
+                    formatted_words.append(f"{C_WHITE}{w_text}{C_RESET}")
+                else:
+                    formatted_words.append(f"{C_DIM}{w_text}{C_RESET}")
+
+            line_render = " ".join(formatted_words)
+            line_plain_len = len(curr["text"]) + 4
+            c_pad = max((term_w - line_plain_len) // 2, 0)
+            buf.append(" " * c_pad + line_render + "\n\n")
+
+            # Prominent Center Box with Active Word
+            if active_word_str:
+                clean_word = active_word_str.strip(' ,.?!":;«»()')
+                box_text = f"  ★  {clean_word.upper()}  ★  "
+                b_pad = max((term_w - len(box_text)) // 2, 0)
+                border = "─" * len(box_text)
+                buf.append(f"{C_DIM}{' ' * b_pad}╭{border}╮{C_RESET}\n")
+                buf.append(f"{' ' * b_pad}{C_DIM}│{C_RESET}{C_BOLD}{C_YELLOW}{box_text}{C_RESET}{C_DIM}│{C_RESET}\n")
+                buf.append(f"{C_DIM}{' ' * b_pad}╰{border}╯{C_RESET}\n\n")
+            else:
+                buf.append("\n\n\n\n")
+        else:
+            c_text = curr["text"]
+            c_pad = max((term_w - len(c_text)) // 2, 0)
+            buf.append(" " * c_pad + f"{C_BOLD}{C_GREEN}{c_text}{C_RESET}\n\n\n\n\n")
+
+        # Next line
+        if nxt:
+            n_text = nxt["text"]
+            n_pad = max((term_w - len(n_text)) // 2, 0)
+            buf.append(" " * n_pad + f"{C_DIM}{n_text}{C_RESET}\n")
+        else:
+            buf.append("\n")
+
+        buf.append("\n" * max(avail_h - top_space - 8, 1))
+
+    # 3. Footer instructions
+    footer = f"{C_DIM}[q] Quit  •  [+/-] Sync Offset  •  [0] Reset  •  [Space] Play/Pause{C_RESET}"
+    buf.append(" " * max((term_w - 65) // 2, 0) + footer)
+
+    return "".join(buf)
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Real-time Word-by-Word Lyrics for YouTube & Browsers")
+    parser.add_argument("--word", action="store_true", help="Pipe mode: print only the currently playing word on change")
+    parser.add_argument("--line", action="store_true", help="Pipe mode: print only the current lyric line on change")
+    parser.add_argument("--json", action="store_true", help="Pipe mode: output real-time JSON status")
+    args = parser.parse_args()
+
+    # Start local HTTP server on port 8974 for direct video.currentTime sync from Tampermonkey
+    start_browser_sync_server(8974)
+
+    pipe_mode = args.word or args.line or args.json
+
+    old_term_settings = None
+    if not pipe_mode and sys.stdin.isatty():
+        try:
+            old_term_settings = termios.tcgetattr(sys.stdin)
+            tty.setcbreak(sys.stdin.fileno())
+        except Exception:
+            pass
+
+    def cleanup(*_):
+        if old_term_settings:
+            try:
+                termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_term_settings)
+            except Exception:
+                pass
+        if not pipe_mode:
+            sys.stdout.write(C_SHOW_CURSOR + C_CLEAR)
+            sys.stdout.flush()
+        sys.exit(0)
+
+    signal.signal(signal.SIGINT, cleanup)
+    signal.signal(signal.SIGTERM, cleanup)
+
+    if not pipe_mode:
+        sys.stdout.write(C_CLEAR + C_HIDE_CURSOR)
+        sys.stdout.flush()
+
+    last_raw_title = ""
+    lines = []
+    clean_title = ""
+    clean_artist = ""
+    search_state = "idle"
+
+    # Playback clock
+    internal_pos = 0.0
+    last_loop_time = time.time()
+    last_reported_mpris_pos = 0.0
+    manual_offset = 0.0
+    user_paused = False
+
+    last_word_emitted = None
+    last_line_emitted = None
+
+    def on_lyrics_found(lrc_text, t, a):
+        nonlocal lines, clean_title, clean_artist, search_state
+        clean_title = t
+        clean_artist = a
+        if lrc_text:
+            lines = parse_lrc(lrc_text)
+            search_state = "found"
+        else:
+            lines = []
+            search_state = "not_found"
+
+    while True:
+        now = time.time()
+        dt = now - last_loop_time
+        last_loop_time = now
+
+        # Non-blocking key input in TUI mode
+        if not pipe_mode and sys.stdin.isatty():
+            r, _, _ = select.select([sys.stdin], [], [], 0)
+            if r:
+                try:
+                    ch = sys.stdin.read(1)
+                    if ch == 'q':
+                        cleanup()
+                    elif ch in ('+', ']', 'k'):
+                        manual_offset += 0.5
+                    elif ch in ('-', '[', 'j'):
+                        manual_offset -= 0.5
+                    elif ch == '0':
+                        internal_pos = 0.0
+                        manual_offset = 0.0
+                    elif ch == ' ':
+                        user_paused = not user_paused
+                except Exception:
+                    pass
+
+        try:
+            info = get_player_info()
+            if not info or not info.get("raw_title"):
+                if not pipe_mode:
+                    term_w, term_h = shutil.get_terminal_size((80, 24))
+                    sys.stdout.write(C_HOME + "\n" * (term_h // 3))
+                    msg = f"{C_DIM}♪ Open YouTube in your browser & play a track ♪{C_RESET}"
+                    sys.stdout.write(" " * max((term_w - len(msg) + 10) // 2, 0) + msg + "\n")
+                    sys.stdout.flush()
+                time.sleep(0.5)
+                continue
+
+            raw_title = info["raw_title"]
+            mpris_pos = info["position"]
+            status = info["status"]
+
+            # Track changed? Start async lyrics search and sync to current position
+            if raw_title != last_raw_title:
+                last_raw_title = raw_title
+                # CRITICAL: Initialize internal clock to the actual player position!
+                internal_pos = mpris_pos if mpris_pos > 0.05 else 0.0
+                manual_offset = 0.0
+                last_reported_mpris_pos = mpris_pos
+                lines = []
+                search_state = "searching"
+
+                parsed_artist, parsed_track = clean_youtube_title(raw_title, info.get("raw_artist", ""))
+                clean_title = parsed_track
+                clean_artist = parsed_artist
+
+                t = threading.Thread(
+                    target=fetch_synced_lyrics_worker,
+                    args=(parsed_artist, parsed_track, on_lyrics_found),
+                    daemon=True
+                )
+                t.start()
+
+            # Synchronization Strategy:
+            # 1. Direct Browser Sync (if Tampermonkey / extension sent data within last 1.5s)
+            is_browser_direct = (now - g_browser_sync["last_seen"] < 1.5)
+            if is_browser_direct:
+                internal_pos = g_browser_sync["time"]
+                effective_status = "Paused" if g_browser_sync["paused"] else "Playing"
+                effective_len = g_browser_sync["duration"] or info.get("length", 0.0)
+            else:
+                # 2. MPRIS + Smart Clock (handles seeks & play/pause)
+                if abs(mpris_pos - last_reported_mpris_pos) > 0.8 and mpris_pos > 0.05:
+                    internal_pos = mpris_pos
+                    last_reported_mpris_pos = mpris_pos
+                else:
+                    if status == "Playing" and not user_paused:
+                        internal_pos += dt
+                effective_status = "Paused" if user_paused else status
+                effective_len = info.get("length", 0.0)
+
+            effective_pos = max(internal_pos + manual_offset, 0.0)
+
+            # Find active line & active word
+            current_line_idx = None
+            current_word_idx = None
+            active_word_str = ""
+            active_line_str = ""
+
+            for l_idx, line in enumerate(lines):
+                if line["start"] <= effective_pos <= line["end"]:
+                    current_line_idx = l_idx
+                    active_line_str = line["text"]
+                    if line.get("words"):
+                        for w_idx, w_obj in enumerate(line["words"]):
+                            if w_obj["start"] <= effective_pos <= w_obj["end"]:
+                                current_word_idx = w_idx
+                                active_word_str = w_obj["word"]
+                                break
+                        if current_word_idx is None and line["words"]:
+                            if effective_pos < line["words"][0]["start"]:
+                                current_word_idx = 0
+                                active_word_str = line["words"][0]["word"]
+                            else:
+                                current_word_idx = len(line["words"]) - 1
+                                active_word_str = line["words"][-1]["word"]
+                    break
+
+            # Handle Pipe Outputs
+            if args.word:
+                if active_word_str and active_word_str != last_word_emitted:
+                    last_word_emitted = active_word_str
+                    sys.stdout.write(active_word_str.strip(' ,.?!":;«»()') + "\n")
+                    sys.stdout.flush()
+            elif args.line:
+                if active_line_str and active_line_str != last_line_emitted:
+                    last_line_emitted = active_line_str
+                    sys.stdout.write(active_line_str + "\n")
+                    sys.stdout.flush()
+            elif args.json:
+                data = {
+                    "artist": clean_artist,
+                    "title": clean_title,
+                    "status": effective_status,
+                    "position": round(effective_pos, 2),
+                    "line": active_line_str,
+                    "word": active_word_str.strip(' ,.?!":;«»()') if active_word_str else "",
+                    "direct_sync": is_browser_direct
+                }
+                sys.stdout.write(json.dumps(data, ensure_ascii=False) + "\n")
+                sys.stdout.flush()
+            else:
+                # Interactive TUI mode
+                term_w, term_h = shutil.get_terminal_size((80, 24))
+                frame = render_tui(
+                    term_w, term_h, clean_title or raw_title, clean_artist or info.get("raw_artist", ""),
+                    effective_status, effective_pos, effective_len,
+                    lines, current_line_idx, current_word_idx, search_state, manual_offset, is_browser_direct
+                )
+                sys.stdout.write(frame)
+                sys.stdout.flush()
+
+            time.sleep(0.06)
+
+        except Exception:
+            time.sleep(0.3)
+
+
+if __name__ == "__main__":
+    main()

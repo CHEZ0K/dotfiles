@@ -1,0 +1,11 @@
+[Nemo Action]
+Active=true
+Name=Распаковать сюда
+Name[en]=Extract Here
+Comment=Распаковать архив в текущую папку
+Comment[en]=Extract archive to current folder
+Exec=/home/chezok/.local/bin/nemo-archive-tool extract-here %P %F
+Icon-Name=package-x-generic
+Selection=notnone
+Extensions=zip;7z;rar;tar;gz;bz2;xz;zst;tgz;tbz;tbz2;txz;tzst;iso;deb;cpio;rpm;cab;
+Quote=double

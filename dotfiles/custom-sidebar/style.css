@@ -1,0 +1,447 @@
+/* custom-sidebar GTK4 CSS — inline colors via __PLACEHOLDER__ substitution */
+/* GTK 4.22: @define-color deprecated, var() not supported => inline values  */
+
+/* ── Window transparency (must override Adwaita) ── */
+window,
+window.background,
+window.csd,
+window.csd-sidebar,
+window.csd-sidebar > *,
+window > *,
+#custom-sidebar-window,
+#custom-sidebar-window > * {
+  background-color: transparent;
+  background-image: none;
+  box-shadow: none;
+}
+
+/* dismiss window */
+window.dismiss-window,
+window.dismiss-window > *,
+window.dismiss-window box {
+  background-color: transparent;
+  background-image: none;
+}
+
+* {
+  font-family: 'Adwaita Sans', 'Google Sans Flex', 'Google Sans', sans-serif;
+  box-shadow: none;
+  outline: none;
+}
+
+.material-symbol {
+  font-family: 'Material Symbols Rounded', 'Material Icons', sans-serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.nerd-icon {
+  font-family: 'JetBrainsMono Nerd Font', 'Symbols Nerd Font Mono', sans-serif;
+}
+
+/* ── Sidebar root background ── */
+.sidebar-bg {
+  background-color: __L0__;
+  border: 1px solid __L0B__;
+  border-radius: 20px;
+  padding: 10px;
+  min-width: 440px;
+  opacity: 1;
+  transition: opacity 200ms ease;
+}
+
+.sidebar-bg.sidebar-hidden { opacity: 0; }
+
+/* ==================== QUICK TOGGLES ==================== */
+.quick-panel-grid { margin-bottom: 2px; }
+
+button.quick-pill-btn {
+  background-color: __L2__;
+  background-image: none;
+  border-radius: 16px;
+  min-height: 36px;
+  padding: 0 10px;
+  border: none;
+  color: __ON_SURFACE__;
+  transition: background-color 180ms ease;
+}
+button.quick-pill-btn:hover {
+  background-color: __L2H__;
+  background-image: none;
+}
+button.quick-pill-btn.active {
+  background-color: __PRIMARY__;
+  background-image: none;
+  color: __ON_PRIMARY__;
+}
+button.quick-pill-btn.active * { color: __ON_PRIMARY__; }
+button.quick-pill-btn.active:hover {
+  background-color: __PRI_HOVER__;
+  background-image: none;
+}
+
+.quick-pill-icon { font-size: 18px; color: __ON_SURFACE__; }
+
+/* Uptime */
+.uptime-pill {
+  background-color: __L2__;
+  border-radius: 16px;
+  min-height: 36px;
+  padding: 0 10px;
+}
+.uptime-pill * { color: __ON_SURFACE__; }
+.uptime-pill label { font-size: 12px; font-weight: 500; }
+.uptime-pill .nerd-icon {
+  font-family: 'JetBrainsMono Nerd Font', 'Symbols Nerd Font Mono', sans-serif;
+  font-size: 14px;
+}
+
+/* Power */
+button.power-pill {
+  background-color: __L2__;
+  background-image: none;
+  border-radius: 16px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: none;
+  transition: background-color 180ms ease;
+}
+button.power-pill:hover {
+  background-color: __L2H__;
+  background-image: none;
+}
+button.power-pill * { color: __ON_SURFACE__; }
+button.power-pill label { font-size: 12px; font-weight: 500; }
+button.power-pill .material-symbol { font-size: 16px; margin-right: 6px; }
+
+/* ==================== NOTIFICATIONS CARD ==================== */
+.notifications-card {
+  background-color: __L1__;
+  border-radius: 16px;
+  padding: 10px;
+}
+.notif-scroll-area { min-height: 100px; }
+.notif-placeholder { padding: 28px 10px; }
+.notif-placeholder-icon { font-size: 40px; color: __SUBTEXT__; margin-bottom: 6px; }
+.notif-placeholder-text { font-size: 13px; font-weight: 500; color: __SUBTEXT__; }
+
+.notif-item {
+  background-color: __L2__;
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-bottom: 6px;
+}
+.notif-item * { color: __ON_SURFACE__; }
+.notif-app-title { font-size: 12px; font-weight: 600; color: __ON_SURF_VAR__; }
+.notif-time-label { font-size: 11px; color: __SUBTEXT__; }
+.notif-summary { font-size: 14px; font-weight: 700; margin-top: 4px; }
+.notif-body { font-size: 12px; color: __ON_SURF_VAR__; margin-top: 2px; }
+
+.notif-status-row {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+
+button.notif-action-btn {
+  background-color: __L2__;
+  background-image: none;
+  border-radius: 16px;
+  min-width: 32px; min-height: 32px;
+  padding: 0;
+  border: none;
+  transition: background-color 180ms ease;
+}
+button.notif-action-btn:hover {
+  background-color: __L2H__;
+  background-image: none;
+}
+button.notif-action-btn.active {
+  background-color: __PRIMARY__;
+  background-image: none;
+}
+button.notif-action-btn.active * { color: __ON_PRIMARY__; }
+button.notif-action-btn * { color: __ON_SURFACE__; }
+button.notif-action-btn .material-symbol { font-size: 16px; }
+.notif-count-text { font-size: 13px; font-weight: 500; color: __ON_SURF_VAR__; }
+
+/* ==================== BOTTOM WIDGET GROUP ==================== */
+.bottom-widget-group {
+  background-color: __L1__;
+  border-radius: 16px;
+  padding: 8px;
+  min-height: 275px;
+}
+
+/* Nav Rail */
+.nav-rail { min-width: 82px; padding-right: 4px; }
+
+button.nav-rail-btn {
+  background-color: transparent;
+  background-image: none;
+  border-radius: 14px;
+  padding: 8px 4px;
+  border: none;
+  transition: background-color 180ms ease;
+}
+button.nav-rail-btn:hover {
+  background-color: rgba(255,255,255,0.05);
+  background-image: none;
+}
+button.nav-rail-btn.active {
+  background-color: __L2__;
+  background-image: none;
+}
+button.nav-rail-btn * { color: __ON_SURFACE__; }
+.nav-rail-icon { font-size: 22px; margin-bottom: 2px; }
+.nav-rail-label { font-size: 10px; font-weight: 500; }
+
+/* Timer Sub-tabs */
+.timer-tab-bar {
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  margin-bottom: 4px;
+}
+button.timer-subtab-btn {
+  background-color: transparent;
+  background-image: none;
+  border: none;
+  padding: 4px 10px 8px 10px;
+  color: __ON_SURF_VAR__;
+  border-bottom: 2px solid transparent;
+  transition: color 150ms ease, border-color 150ms ease;
+}
+button.timer-subtab-btn:hover {
+  background-color: transparent;
+  background-image: none;
+  color: __ON_SURFACE__;
+}
+button.timer-subtab-btn.active {
+  background-color: transparent;
+  background-image: none;
+  color: __ON_SURFACE__;
+  border-bottom: 2px solid __PRIMARY__;
+}
+button.timer-subtab-btn * { color: inherit; }
+button.timer-subtab-btn .material-symbol { font-size: 15px; }
+button.timer-subtab-btn label { font-size: 12px; font-weight: 600; }
+
+/* ── OVAL PILL CAPSULE 260×74px ── */
+.timer-capsule {
+  background-color: __L2__;
+  border-radius: 37px;
+  border: 1px solid rgba(255,255,255,0.10);
+  margin: 4px 0;
+}
+.timer-capsule.running {
+  border-color: __PRIMARY__;
+  border-width: 2px;
+}
+.timer-capsule-fill {
+  background-color: __PRI_CONT__;
+  opacity: 0.35;
+  border-radius: 37px;
+}
+
+.timer-big-display {
+  font-size: 32px;
+  font-weight: 600;
+  color: __ON_SURFACE__;
+}
+.timer-ms-display {
+  font-size: 20px;
+  font-weight: 500;
+  color: __PRIMARY__;
+  margin-bottom: 5px;
+}
+.timer-sub-display {
+  font-size: 11px;
+  font-weight: 500;
+  color: __ON_SURF_VAR__;
+  margin-top: -2px;
+}
+
+/* Timer entries (transparent, inside capsule) */
+entry.timer-entry {
+  background-color: transparent;
+  background-image: none;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+  color: __ON_SURFACE__;
+  font-size: 26px;
+  font-weight: 600;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  transition: color 150ms ease;
+}
+entry.timer-entry:focus { color: __PRIMARY__; }
+entry.timer-entry > text { background-color: transparent; }
+
+.timer-entry-label { font-size: 10px; font-weight: 700; color: __SUBTEXT__; }
+.timer-sep {
+  font-size: 22px;
+  font-weight: 700;
+  color: __ON_SURF_VAR__;
+  margin: 0 1px;
+  padding-bottom: 10px;
+}
+
+/* Presets */
+.presets-row { margin: 2px 0; }
+button.preset-pill {
+  background-color: transparent;
+  background-image: none;
+  border-radius: 8px;
+  min-height: 24px; min-width: 24px;
+  padding: 2px 4px;
+  border: none;
+  font-size: 12px;
+  font-weight: 500;
+  color: __ON_SURF_VAR__;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+button.preset-pill:hover {
+  background-color: rgba(255,255,255,0.08);
+  background-image: none;
+  color: __ON_SURFACE__;
+}
+button.preset-pill.active {
+  background-color: transparent;
+  background-image: none;
+  color: __PRIMARY__;
+  font-weight: 600;
+}
+
+/* Action Buttons */
+.timer-actions-row { margin-top: 4px; }
+
+button.btn-action-primary {
+  background-color: __PRIMARY__;
+  background-image: none;
+  border-radius: 20px;
+  min-height: 34px; min-width: 110px;
+  padding: 0 18px;
+  border: none;
+  font-size: 13px; font-weight: 700;
+  transition: background-color 180ms ease;
+}
+button.btn-action-primary * { color: __ON_PRIMARY__; }
+button.btn-action-primary:hover {
+  background-color: __PRI_HOVER__;
+  background-image: none;
+}
+
+button.btn-action-danger {
+  background-color: __ERR_CONT__;
+  background-image: none;
+  border-radius: 20px;
+  min-height: 34px; min-width: 88px;
+  padding: 0 14px;
+  border: none;
+  font-size: 13px; font-weight: 700;
+  transition: background-color 180ms ease;
+}
+button.btn-action-danger * { color: __ON_ERR_CONT__; }
+
+/* ==================== CALENDAR ==================== */
+.calendar-widget { padding: 2px 4px; }
+
+button.cal-month-pill {
+  background-color: transparent;
+  background-image: none;
+  border-radius: 10px;
+  padding: 4px 8px;
+  border: none;
+  transition: background-color 150ms ease;
+}
+button.cal-month-pill:hover {
+  background-color: rgba(255,255,255,0.06);
+  background-image: none;
+}
+button.cal-month-pill label { font-size: 13px; font-weight: 600; color: __ON_SURFACE__; }
+
+button.cal-arrow-btn {
+  background-color: transparent;
+  background-image: none;
+  border-radius: 50%;
+  min-width: 30px; min-height: 30px;
+  padding: 0; border: none;
+  transition: background-color 150ms ease;
+}
+button.cal-arrow-btn:hover {
+  background-color: rgba(255,255,255,0.08);
+  background-image: none;
+}
+button.cal-arrow-btn .material-symbol { font-size: 18px; color: __ON_SURFACE__; }
+
+.cal-weekday { font-size: 11px; font-weight: 600; color: __SUBTEXT__; }
+
+button.cal-day-btn {
+  background-color: transparent;
+  background-image: none;
+  border-radius: 8px;
+  padding: 0; border: none;
+  font-size: 12px;
+  transition: background-color 150ms ease;
+}
+button.cal-day-btn label { color: __ON_SURFACE__; font-size: 12px; }
+button.cal-day-btn:hover {
+  background-color: rgba(255,255,255,0.08);
+  background-image: none;
+}
+
+button.cal-today {
+  background-color: __PRIMARY__;
+  background-image: none;
+  border-radius: 17px;
+}
+button.cal-today label { color: __ON_PRIMARY__; font-weight: 700; }
+button.cal-day-other label { color: __SUBTEXT__; }
+
+/* ==================== DIALOGS ==================== */
+.dialog-sheet {
+  background-color: __L0__;
+  border-radius: 20px;
+  padding: 14px;
+}
+.dialog-header { margin-bottom: 12px; }
+
+button.dialog-back-btn {
+  background-color: __L2__;
+  background-image: none;
+  border-radius: 16px;
+  min-width: 32px; min-height: 32px;
+  border: none;
+  transition: background-color 150ms ease;
+}
+button.dialog-back-btn:hover {
+  background-color: __L2H__;
+  background-image: none;
+}
+button.dialog-back-btn * { color: __ON_SURFACE__; }
+
+.dialog-title { font-size: 16px; font-weight: 700; color: __ON_SURFACE__; }
+
+.dialog-list-item {
+  background-color: __L1__;
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-bottom: 4px;
+}
+.dialog-list-item * { color: __ON_SURFACE__; }
+
+button.dialog-connect-btn {
+  background-color: __L2__;
+  background-image: none;
+  border-radius: 10px;
+  padding: 4px 10px; border: none;
+  font-size: 12px; font-weight: 600;
+  transition: background-color 150ms ease;
+}
+button.dialog-connect-btn:hover {
+  background-color: __PRIMARY__;
+  background-image: none;
+  color: __ON_PRIMARY__;
+}
+button.dialog-connect-btn * { color: __ON_SURFACE__; }

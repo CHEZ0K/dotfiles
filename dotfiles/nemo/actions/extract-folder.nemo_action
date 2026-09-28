@@ -1,0 +1,11 @@
+[Nemo Action]
+Active=true
+Name=Распаковать в отдельную папку
+Name[en]=Extract to subfolder
+Comment=Распаковать архив в папку с его именем
+Comment[en]=Extract archive to folder named after the file
+Exec=/home/chezok/.local/bin/nemo-archive-tool extract-folder %P %F
+Icon-Name=folder-download
+Selection=notnone
+Extensions=zip;7z;rar;tar;gz;bz2;xz;zst;tgz;tbz;tbz2;txz;tzst;iso;deb;cpio;rpm;cab;
+Quote=double

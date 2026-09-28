@@ -1,0 +1,11 @@
+[Nemo Action]
+Active=true
+Name=Сжать в ZIP архив
+Name[en]=Compress to ZIP
+Comment=Сжать выбранные элементы в ZIP архив
+Comment[en]=Compress selected items into a ZIP archive
+Exec=/home/chezok/.local/bin/nemo-archive-tool compress %P %F
+Icon-Name=archive-insert
+Selection=notnone
+Extensions=nodirs;dir;
+Quote=double

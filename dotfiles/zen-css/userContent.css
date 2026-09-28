@@ -1,0 +1,10 @@
+/* ==========================================================================
+   Zen Browser - userContent.css for Pywal Transparent New Tab
+   ========================================================================== */
+
+@-moz-document url("about:blank"), url("about:newtab"), url("about:home"), url-prefix("about:zen") {
+    :root, html, body {
+        background: transparent !important;
+        background-color: transparent !important;
+    }
+}

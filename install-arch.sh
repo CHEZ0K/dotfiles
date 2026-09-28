@@ -531,6 +531,7 @@ EOF
         DOTFILES_DIR="${DOTFILES_DIR}" USER="${USERNAME}" HOME="/home/${USERNAME}" deploy_dotfiles
         configure_display_resolution
         DOTFILES_DIR="${DOTFILES_DIR}" deploy_sddm_theme
+        DOTFILES_DIR="${DOTFILES_DIR}" deploy_grub_theme
         DOTFILES_DIR="${DOTFILES_DIR}" USER="${USERNAME}" HOME="/home/${USERNAME}" deploy_zen_css
         deploy_xwayland_satellite
 
@@ -853,6 +854,33 @@ deploy_dotfiles() {
         ok "Курсор Furina скопирован"
     fi
 
+    # ─── Аватарка (~/.face.icon) ───
+    safe_copy "$df/face/.face.icon" "$target_home/.face.icon"
+
+    # ─── Дефолтный курсор (~/.icons/default) ───
+    safe_copy "$DOTFILES_DIR/themes/cursors/default" "$target_home/.icons/default"
+
+    # ─── Действия Nemo (~/.local/share/nemo/actions) ───
+    safe_copy "$df/nemo/actions" "$target_home/.local/share/nemo/actions"
+
+    # ─── Nemo библиотеки (~/.local/lib) ───
+    safe_copy "$df/lib" "$target_home/.local/lib"
+
+    # ─── Темы GTK (~/.local/share/themes) ───
+    safe_copy "$DOTFILES_DIR/themes/gtk" "$target_home/.local/share/themes"
+
+    # ─── Custom sidebar (~/.config/custom-sidebar) ───
+    safe_copy "$df/custom-sidebar" "$cfg/custom-sidebar"
+
+    # ─── Настройки интерфейса GNOME/GTK (gsettings) ───
+    su - "${target_user}" -c "
+        gsettings set org.gnome.desktop.interface gtk-theme 'Mint-Y-Dark' 2>/dev/null || true
+        gsettings set org.gnome.desktop.interface icon-theme 'Tela-circle-wal' 2>/dev/null || true
+        gsettings set org.gnome.desktop.interface cursor-theme 'Furina' 2>/dev/null || true
+        gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark' 2>/dev/null || true
+        gsettings set org.gnome.desktop.interface font-name 'Adwaita Sans 11' 2>/dev/null || true
+    " 2>/dev/null || true
+
     # Обновляем GTK иконки
     if command -v gtk-update-icon-cache &>/dev/null; then
         gtk-update-icon-cache "$target_home/.local/share/icons" 2>/dev/null || true
@@ -894,15 +922,10 @@ EOF
 }
 
 deploy_zen_css() {
-    header "Настройка Zen Browser (userChrome.css)..."
+    header "Настройка Zen Browser (userChrome.css, userContent.css, user.js)..."
 
     local target_user="${USERNAME:-chezok}"
-    local zen_css_src="$DOTFILES_DIR/dotfiles/zen-css/userChrome.css"
-
-    if [[ ! -f "$zen_css_src" ]]; then
-        warn "userChrome.css не найден в репо."
-        return
-    fi
+    local zen_dir="$DOTFILES_DIR/dotfiles/zen-css"
 
     # Находим профиль Zen Browser
     local zen_profiles_dir="/home/${target_user}/.config/zen"
@@ -912,15 +935,36 @@ deploy_zen_css() {
 
         if [[ -n "$profile_dir" ]]; then
             mkdir -p "$profile_dir/chrome"
-            cp "$zen_css_src" "$profile_dir/chrome/userChrome.css"
-            ok "userChrome.css установлен в: $profile_dir/chrome/"
+            [[ -f "$zen_dir/userChrome.css" ]] && cp "$zen_dir/userChrome.css" "$profile_dir/chrome/"
+            [[ -f "$zen_dir/userContent.css" ]] && cp "$zen_dir/userContent.css" "$profile_dir/chrome/"
+            [[ -f "$zen_dir/user.js" ]] && cp "$zen_dir/user.js" "$profile_dir/"
+            ok "Стили и настройки Zen Browser установлены в профиль."
         fi
     fi
 
-    # Сохраняем шаблон в ~/.config/zen для автоматического/ручного копирования
-    mkdir -p "/home/${target_user}/.config/zen"
-    cp "$zen_css_src" "/home/${target_user}/.config/zen/userChrome.css"
-    ok "userChrome.css сохранён в /home/${target_user}/.config/zen/userChrome.css"
+    # Сохраняем шаблоны в ~/.config/zen для автоматического копирования
+    mkdir -p "/home/${target_user}/.config/zen/template/chrome"
+    cp -r "$zen_dir/." "/home/${target_user}/.config/zen/template/" 2>/dev/null || true
+    ok "Шаблоны Zen Browser сохранены."
+}
+
+deploy_grub_theme() {
+    header "Установка темы GRUB Asuka..."
+
+    local src="$DOTFILES_DIR/themes/grub/asuka"
+    local dst="/boot/grub/themes/asuka"
+
+    if [[ -d "$src" ]]; then
+        mkdir -p "$dst"
+        cp -r "$src/." "$dst/"
+        if ! grep -q "^GRUB_THEME=" /etc/default/grub; then
+            echo "GRUB_THEME=\"/boot/grub/themes/asuka/theme.txt\"" >> /etc/default/grub
+        else
+            sed -i 's|^#\?GRUB_THEME=.*|GRUB_THEME="/boot/grub/themes/asuka/theme.txt"|' /etc/default/grub
+        fi
+        grub-mkconfig -o /boot/grub/grub.cfg 2>/dev/null || true
+        ok "GRUB тема Asuka установлена и активирована."
+    fi
 }
 
 deploy_xwayland_satellite() {
