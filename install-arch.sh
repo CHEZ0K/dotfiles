@@ -486,17 +486,30 @@ EOF
     systemctl enable power-profiles-daemon
     systemctl enable scx 2>/dev/null || warn "scx не найден, пропускаем"
 
-    ok "Службы включены."
+    # Polkit правило для управления Wi-Fi без пароля root
+    mkdir -p /etc/polkit-1/rules.d
+    cat > /etc/polkit-1/rules.d/50-networkmanager.rules << POLKIT_EOF
+/* Разрешить пользователю ${USERNAME} управление NetworkManager без пароля root */
+polkit.addRule(function(action, subject) {
+    if (action.id.indexOf("org.freedesktop.NetworkManager.") === 0 && subject.user === "${USERNAME}") {
+        return polkit.Result.YES;
+    }
+});
+POLKIT_EOF
+
+    ok "Службы включены, Polkit правило для Wi-Fi создано."
 
     # ─── SDDM настройка ───
-    header "Настройка SDDM (Wayland + тема silent)..."
+    header "Настройка SDDM (Wayland + тема silent + курсор Furina)..."
 
     mkdir -p /etc/sddm.conf.d
     cat > /etc/sddm.conf.d/default.conf << 'EOF'
 [Theme]
 Current=silent
+CursorTheme=Furina
 
 [General]
+DisplayServer=wayland
 InputMethod=qtvirtualkeyboard
 GreeterEnvironment=QML2_IMPORT_PATH=/usr/share/sddm/themes/silent/components/,QT_IM_MODULE=qtvirtualkeyboard
 
