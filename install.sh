@@ -255,15 +255,39 @@ MIRRORS
 
     ok "Mirrorlist настроен."
 
-    # ─── Pacstrap (базовая система) ───
-    header "Установка базовой системы (pacstrap)..."
+    # ─── Подключение CachyOS репозиториев НА ISO ДО PACSTRAP ───
+    header "Подключение CachyOS репозиториев (x86-64-v3) на Live ISO..."
+
+    cd /tmp
+    curl -fsSL "https://mirror.cachyos.org/cachyos-repo.tar.xz" -o cachyos-repo.tar.xz
+    tar xf cachyos-repo.tar.xz
+    cd cachyos-repo
+    echo "y" | ./cachyos-repo.sh || warn "CachyOS repo script завершился с предупреждением, продолжаем..."
+    cd /tmp
+
+    # Обновляем базы на ISO с новыми репозиториями
+    pacman -Syy --noconfirm
+
+    # Копируем конфиг pacman и зеркала CachyOS в будущую систему
+    mkdir -p /mnt/etc/pacman.d
+    cp /etc/pacman.conf /mnt/etc/pacman.conf
+    cp -r /etc/pacman.d/* /mnt/etc/pacman.d/ 2>/dev/null || true
+
+    ok "CachyOS репозитории подключены! Пакеты будут скачиваться оптимизированными."
+
+    # ─── Pacstrap (оптимизированная CachyOS база + Bore ядро) ───
+    header "Установка базовой системы CachyOS (pacstrap)..."
 
     pacstrap -K /mnt \
-        base base-devel linux-firmware \
+        base base-devel \
+        cachyos-keyring cachyos-mirrorlist cachyos-v3-mirrorlist \
+        cachyos-settings \
+        linux-cachyos-bore linux-cachyos-bore-headers \
+        linux-firmware \
         grub efibootmgr xfsprogs \
         networkmanager sudo git curl nano vim
 
-    ok "Базовая система установлена."
+    ok "Базовая CachyOS система с ядром Bore установлена."
 
     # ─── fstab ───
     header "Генерация fstab..."
