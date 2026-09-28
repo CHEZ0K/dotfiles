@@ -595,7 +595,7 @@ detect_and_install_gpu() {
             nvidia nvidia-utils lib32-nvidia-utils \
             vulkan-icd-loader
         # Для Wayland/Niri
-        sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT="quiet loglevel=3 nvidia-drm.modeset=1 nowatchdog"/' /etc/default/grub
+        sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 nvidia-drm.modeset=1"/' /etc/default/grub
         ok "NVIDIA GPU драйверы установлены."
 
     else
