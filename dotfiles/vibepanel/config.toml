@@ -1,0 +1,102 @@
+# =============================================================================
+# vibepanel Configuration
+# =============================================================================
+
+[bar]
+position = "top"
+size = 28
+spacing = 2
+screen_margin = 0
+inset = 6
+padding = 0
+border_radius = 0
+background_opacity = 0.0
+popover_offset = 3
+
+[widgets]
+left = [
+  "media",
+  "battery",
+]
+
+center = [
+  "clock",
+]
+
+right = [
+  "memory",
+  "cpu",
+  "quick_settings",
+  "tray",
+  "notifications",
+]
+
+popover_background_opacity = 0.45
+
+[widgets.notifications]
+toast_position = "top-right"
+
+[widgets.memory]
+show_icon = true
+format = "both"
+stable_width = false
+
+[widgets.cpu]
+show_icon = true
+format = "both"
+stable_width = false
+
+[widgets.quick_settings]
+network = true
+bluetooth = true
+audio = true
+mic = true
+brightness = true
+power = false
+idle_inhibitor = false
+updates = false
+vpn = false
+
+[widgets.tray]
+max_icons = 12
+
+[widgets.media]
+template = "{art} {title} {controls}"
+empty_text = ""
+max_chars = 18
+visualizer = true
+art_radius = 6
+popout_opacity = 0.0
+
+[widgets.battery]
+show_percentage = true
+show_icon = true
+
+[widgets.clock]
+format = "%a %d %H:%M:%S"
+show_weather = false
+
+[theme]
+mode = "auto"
+animations = true
+ripple = true
+shadows = false
+blur = true
+
+[theme.typography]
+font_family = "JetBrainsMono Nerd Font, Adwaita Sans, FreeSans, sans-serif"
+
+[theme.icons]
+theme = "material"
+weight = 400
+
+[weather]
+location = "Yaroslavl"
+latitude = 57.6261
+longitude = 39.8845
+units = "metric"
+refresh_interval = 900
+
+[advanced]
+pango_font_rendering = true
+

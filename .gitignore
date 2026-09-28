@@ -1,0 +1,29 @@
+# Кэш и временные файлы
+*.pyc
+__pycache__/
+.cache/
+*.tmp
+*.log
+
+# Личные данные браузера (только CSS переносим!)
+dotfiles/zen-css/*.json
+dotfiles/zen-css/storage.js
+
+# Большие бинарные файлы (устанавливаются через пакеты)
+dotfiles/scripts/vibepanel
+dotfiles/scripts/xwayland-satellite
+dotfiles/scripts/foot
+dotfiles/scripts/footclient
+dotfiles/scripts/swaybg
+dotfiles/scripts/wlsunset
+dotfiles/scripts/gammastep
+dotfiles/scripts/7z
+dotfiles/scripts/7zz
+dotfiles/scripts/nemo-archive-tool
+
+# Дотфайлы с секретами
+dotfiles/ssh/
+.install-vars.env
+
+# Git LFS tracking info (не игнорируем сами файлы, только атрибуты настроим отдельно)
+themes/sddm/silent.old/

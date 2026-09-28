@@ -1,0 +1,2 @@
+module QtQuick.VirtualKeyboard.Settings
+singleton VirtualKeyboardSettings 2.0 VirtualKeyboardSettings.qml

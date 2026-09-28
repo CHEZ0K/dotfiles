@@ -1,0 +1,9 @@
+antigravity-cli 1.2.2_6061403484848128-1
+lavat 3.0.0-1
+linux-wallpaperengine-git r627.b016d7d1-1
+pipes.sh 1.3.0-1
+python-pywal 3.3.0-11
+sptlrx-bin 1.3.1-1
+unimatrix-git r103.dff519f-1
+vibepanel-git 0.16.1.r6.g14d8283-1
+waylyrics 0.4.6-1

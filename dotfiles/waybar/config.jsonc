@@ -1,0 +1,220 @@
+{
+  "layer": "top",
+  "position": "top",
+  "height": 28,
+  "margin-top": 0,
+  "margin-left": 6,
+  "margin-right": 6,
+  "margin-bottom": 0,
+  "spacing": 2,
+
+  "modules-left": [
+    "mpris",
+    "group/audio_drawer",
+    "group/backlight_drawer",
+    "battery"
+  ],
+
+  "modules-center": [
+    "clock#date",
+    "clock"
+  ],
+
+  "modules-right": [
+    "memory",
+    "custom/separator#1",
+    "cpu",
+    "custom/separator#cpu_temp",
+    "temperature",
+    "custom/separator#2",
+    "custom/wifi",
+    "custom/bluetooth",
+    "custom/netspeed",
+    "tray"
+  ],
+
+  // ==================== LEFT ISLAND ====================
+
+  "mpris": {
+    "format": "󰎆 {title}",
+    "format-paused": "󰏤 {title}",
+    "max-length": 20,
+    "on-click": "playerctl play-pause",
+    "on-scroll-up": "playerctl next",
+    "on-scroll-down": "playerctl previous",
+    "tooltip-format": "<b>Трек:</b> {title}\n<b>Исполнитель:</b> {artist}"
+  },
+
+  "group/audio_drawer": {
+    "orientation": "horizontal",
+    "drawer": {
+      "transition-duration": 250,
+      "children-class": "audio-slider-child",
+      "transition-left-to-right": true
+    },
+    "modules": [
+      "pulseaudio",
+      "pulseaudio/slider"
+    ]
+  },
+
+  "pulseaudio": {
+    "format": "{icon} {volume}%",
+    "format-muted": "󰝟 {volume}%",
+    "format-icons": {
+      "headphone": "󰋋",
+      "hands-free": "󰋎",
+      "headset": "󰋎",
+      "phone": "󰏲",
+      "portable": "󰏲",
+      "car": "󰄋",
+      "default": ["󰕿", "󰖀", "󰕾"]
+    },
+    "on-click": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
+    "on-scroll-up": "wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 2%+",
+    "on-scroll-down": "wpctl set-volume @DEFAULT_AUDIO_SINK@ 2%-",
+    "tooltip-format": "{desc} | Громкость: {volume}%"
+  },
+
+  "pulseaudio/slider": {
+    "min": 0,
+    "max": 100,
+    "orientation": "horizontal"
+  },
+
+  "group/backlight_drawer": {
+    "orientation": "horizontal",
+    "drawer": {
+      "transition-duration": 250,
+      "children-class": "backlight-slider-child",
+      "transition-left-to-right": true
+    },
+    "modules": [
+      "backlight",
+      "backlight/slider"
+    ]
+  },
+
+  "backlight": {
+    "device": "amdgpu_bl1",
+    "format": "{icon} {percent}%",
+    "format-icons": ["󰃞", "󰃟", "󰃠"],
+    "on-scroll-up": "brightnessctl -e4 -n2 set 2%+",
+    "on-scroll-down": "brightnessctl -e4 -n2 set 2%-",
+    "tooltip-format": "Яркость экрана: {percent}%"
+  },
+
+  "backlight/slider": {
+    "min": 5,
+    "max": 100,
+    "orientation": "horizontal"
+  },
+
+
+  // ==================== CENTER ISLAND ====================
+
+  "clock#date": {
+    "format": "{:%d %b}",
+    "locale": "ru_RU.UTF-8",
+    "tooltip": false
+  },
+
+  "clock": {
+    "interval": 1,
+    "format": "{:%H:%M:%S}",
+    "locale": "ru_RU.UTF-8",
+    "tooltip-format": "<span size='11pt' weight='bold' color='#dee7ea'>🗓  {:%B %Y г.}</span>\n\n<tt><small>{calendar}</small></tt>",
+    "calendar": {
+      "mode": "month",
+      "mode-mon-col": 3,
+      "weeks-pos": "right",
+      "on-scroll": 1,
+      "format": {
+        "months": "<span color='#AFE7FB'><b>{}</b></span>",
+        "days": "<span color='#dee7ea'><b>{}</b></span>",
+        "weeks": "<span color='#65886B'><b>W{}</b></span>",
+        "weekdays": "<span color='#55A0E3'><b>{}</b></span>",
+        "today": "<span color='#ff6b6b'><b><u>{}</u></b></span>"
+      }
+    }
+  },
+
+  "battery": {
+    "states": {
+      "warning": 30,
+      "critical": 15
+    },
+    "format": "{icon} {capacity}%",
+    "format-charging": "󰂄 {capacity}%",
+    "format-plugged": "󰚥 {capacity}%",
+    "format-icons": ["󰂃", "󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"],
+    "tooltip-format": "{capacity}% | {time}"
+  },
+
+  "memory": {
+    "interval": 3,
+    "format": "{used:0.1f}/{total:0.1f} ГБ",
+    "tooltip-format": "<b>Оперативная память (RAM)</b>\n───────────────────────────\n<b>Занято:</b> {used:0.2f} ГБ из {total:0.2f} ГБ ({percentage}%)\n<b>Доступно:</b> {avail:0.2f} ГБ\n───────────────────────────\n<b>Своп (Swap):</b> {swapUsed:0.2f} ГБ из {swapTotal:0.2f} ГБ ({swapPercentage}%)\n───────────────────────────\n<i>Клик: диспетчер задач (btop)</i>",
+    "on-click": "footclient -e btop"
+  },
+
+  "cpu": {
+    "interval": 3,
+    "format": "󰍛 {usage}%",
+    "tooltip": true
+  },
+
+  "temperature": {
+    "interval": 3,
+    "hwmon-path": "/sys/class/hwmon/hwmon4/temp1_input",
+    "critical-threshold": 80,
+    "format": "{temperatureC}°C",
+    "tooltip-format": "Температура CPU: {temperatureC}°C"
+  },
+
+  "custom/wifi": {
+    "exec": "~/.config/waybar/scripts/wifi.py",
+    "return-type": "json",
+    "interval": 5,
+    "on-click": "~/.config/hypr/scripts/control_center.sh",
+    "tooltip": true
+  },
+
+  "custom/bluetooth": {
+    "exec": "~/.config/waybar/scripts/bluetooth.py",
+    "return-type": "json",
+    "interval": 5,
+    "on-click": "~/.config/hypr/scripts/control_center.sh",
+    "tooltip": true
+  },
+
+  "custom/netspeed": {
+    "exec": "~/.config/waybar/scripts/netspeed.py",
+    "return-type": "json",
+    "interval": 3,
+    "tooltip": true
+  },
+
+  "custom/separator#1": {
+    "format": "|",
+    "interval": "once",
+    "tooltip": false
+  },
+
+  "custom/separator#2": {
+    "format": "|",
+    "interval": "once",
+    "tooltip": false
+  },
+
+  "custom/separator#cpu_temp": {
+    "format": "|",
+    "interval": "once",
+    "tooltip": false
+  },
+
+  "tray": {
+    "icon-size": 15,
+    "spacing": 8
+  }
+}

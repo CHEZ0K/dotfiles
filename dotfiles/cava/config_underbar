@@ -1,0 +1,15 @@
+[general]
+bar_width = 6
+bar_spacing = 1
+sensitivity = 100
+framerate = 35
+sleep_timer = 2
+
+[input]
+method = pulse
+source = auto
+
+[output]
+method = ncurses
+orientation = top
+channels = stereo

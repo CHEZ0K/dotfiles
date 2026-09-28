@@ -1,0 +1,433 @@
+@import "/home/chezok/.cache/wal/colors-waybar.css";
+
+* {
+  border: none;
+  border-radius: 0;
+  font-family: "JetBrainsMono Nerd Font", "Adwaita Sans", "FreeSans", sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  min-height: 0;
+}
+
+window#waybar {
+  background-color: transparent;
+  color: @foreground;
+}
+
+/* ==================== BASE ISLAND CONTAINERS (FLAT TOP, EXTENDING FROM TOP EDGE) ==================== */
+
+.modules-left,
+.modules-right {
+  background-color: transparent;
+  background-image: 
+    url('/home/chezok/.config/waybar/flare_cap_left_grad.svg'),
+    url('/home/chezok/.config/waybar/flare_cap_right_grad.svg'),
+    linear-gradient(to bottom, 
+      rgba(52, 44, 35, 1.0) 0px, 
+      rgba(52, 44, 35, 1.0) 4px, 
+      rgba(52, 44, 35, 0.85) 6px, 
+      rgba(52, 44, 35, 0.58) 9px, 
+      rgba(52, 44, 35, 0.58) 28px);
+  background-position: 
+    left top,
+    right top,
+    28px 0px;
+  background-repeat: 
+    no-repeat,
+    no-repeat,
+    no-repeat;
+  background-size: 
+    28px 100%,
+    28px 100%,
+    calc(100% - 56px) 100%;
+  padding: 0 12px;
+  border: none;
+}
+
+.modules-center {
+  background-color: transparent;
+  background-image: 
+    url('/home/chezok/.config/waybar/flare_cap_left.svg'),
+    url('/home/chezok/.config/waybar/flare_cap_right.svg'),
+    linear-gradient(to bottom, rgba(52, 44, 35, 0.58), rgba(52, 44, 35, 0.58));
+  background-position: 
+    left top,
+    right top,
+    28px 0px;
+  background-repeat: 
+    no-repeat,
+    no-repeat,
+    no-repeat;
+  background-size: 
+    28px 100%,
+    28px 100%,
+    calc(100% - 56px) 100%;
+  padding: 0 24px 0 20px;
+  border: none;
+}
+
+
+/* ==================== 1. LEFT ISLAND ==================== */
+
+#custom-media,
+#mpris {
+  background: linear-gradient(135deg, alpha(@color5, 0.9), alpha(@color1, 0.85));
+  border: 1px solid alpha(@color5, 0.5);
+  border-radius: 10px;
+  color: #ffffff;
+  padding: 1px 8px;
+  margin: 1px 2px;
+  font-weight: 600;
+}
+
+#custom-media.media-paused,
+#mpris.paused {
+  opacity: 0.7;
+}
+
+#custom-media:hover,
+#mpris:hover {
+  background: linear-gradient(135deg, alpha(@color5, 1.0), alpha(@color1, 0.95));
+}
+
+#custom-media.hidden,
+#mpris.hidden {
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+}
+
+/* Audio & Backlight: Rounded Slider Knobs */
+#pulseaudio {
+  background: transparent;
+  color: @foreground;
+  padding: 2px 6px;
+  margin: 0;
+  transition: all 0.2s ease;
+}
+
+#pulseaudio:hover {
+  color: #ffffff;
+}
+
+#pulseaudio-slider trough {
+  min-height: 4px;
+  min-width: 44px;
+  border-radius: 4px;
+  background-color: rgba(255, 255, 255, 0.15);
+  margin: 0 4px;
+}
+
+#pulseaudio-slider highlight {
+  min-height: 4px;
+  border-radius: 4px;
+  background-color: @color4;
+}
+
+#pulseaudio-slider slider {
+  min-height: 8px;
+  min-width: 8px;
+  border-radius: 50%;
+  background-color: #ffffff;
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
+  margin: -2px 0;
+}
+
+#backlight {
+  background: transparent;
+  color: @foreground;
+  padding: 2px 6px;
+  margin: 0;
+  transition: all 0.2s ease;
+}
+
+#backlight:hover {
+  color: #ffffff;
+}
+
+#backlight-slider trough {
+  min-height: 4px;
+  min-width: 44px;
+  border-radius: 4px;
+  background-color: rgba(255, 255, 255, 0.15);
+  margin: 0 4px;
+}
+
+#backlight-slider highlight {
+  min-height: 4px;
+  border-radius: 4px;
+  background-color: @color5;
+}
+
+#backlight-slider slider {
+  min-height: 8px;
+  min-width: 8px;
+  border-radius: 50%;
+  background-color: #ffffff;
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
+  margin: -2px 0;
+}
+
+/* ==================== 2. CENTER ISLAND (DATE vs HIGHLIGHTED TIME PILL) ==================== */
+
+/* Date: Neutral Base text on island background */
+#custom-date,
+#clock.date {
+  background: transparent;
+  color: @foreground;
+  padding: 2px 6px;
+  margin: 1px 0 1px 3px;
+  font-weight: 600;
+}
+
+/* Time: Dedicated Dark Pill (safely contained inside island) */
+#clock:not(.date) {
+  background: rgba(0, 0, 0, 0.75);
+  color: @color6;
+  padding: 1px 7px;
+  margin: 2px 2px 2px 4px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  font-weight: 700;
+}
+
+#clock:not(.date):hover {
+  background: @color1;
+  color: #ffffff;
+}
+
+/* ==================== 3. RIGHT ISLAND (CONNECTIVITY PILL) ==================== */
+
+/* Battery: Leftmost Item on Right Island */
+#battery {
+  background: transparent;
+  color: @foreground;
+  padding: 1px 6px;
+  margin: 0 1px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+#battery:hover {
+  color: #ffffff;
+}
+
+#battery.charging,
+#battery.plugged {
+  color: #a6cc33;
+}
+
+#battery.warning:not(.charging) {
+  color: #eab308;
+}
+
+#battery.critical:not(.charging) {
+  color: #ef4444;
+}
+
+/* Separator: Thin subtle vertical bar */
+#custom-separator {
+  color: rgba(255, 255, 255, 0.22);
+  padding: 0 3px;
+  margin: 0;
+  font-size: 10px;
+  font-weight: 300;
+}
+
+/* RAM, CPU & Temp: Neutral Base Items */
+#custom-ram,
+#custom-cpu,
+#custom-temp,
+#memory,
+#cpu,
+#temperature {
+  background: transparent;
+  color: @foreground;
+  padding: 2px 6px;
+  margin: 0;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+#custom-ram:hover,
+#custom-cpu:hover,
+#custom-temp:hover,
+#memory:hover,
+#cpu:hover,
+#temperature:hover {
+  color: #ffffff;
+}
+
+#custom-ram.ram-high,
+#custom-cpu.cpu-high,
+#custom-temp.temp-high,
+#memory.warning,
+#memory.critical,
+#cpu.warning,
+#cpu.critical,
+#temperature.critical {
+  color: #ff6b6b;
+  font-weight: 700;
+}
+
+/* Wi-Fi & Bluetooth: True Dynamic Merging Pill System */
+#custom-wifi,
+#custom-bluetooth {
+  background: transparent;
+  color: @foreground;
+  padding: 2px 5px;
+  margin: 1px 1px;
+  border-radius: 10px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  font-weight: 600;
+}
+
+/* OFF state: Plain neutral text, zero pill/background */
+#custom-wifi.no-pill,
+#custom-bluetooth.no-pill {
+  background: transparent;
+  border: 1px solid transparent;
+  color: rgba(255, 255, 255, 0.35);
+  box-shadow: none;
+  padding: 2px 4px;
+}
+
+#custom-wifi.hidden {
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* Single active pill (When only ONE is on) */
+#custom-wifi.single-pill {
+  background: linear-gradient(135deg, rgba(38, 77, 96, 0.85), rgba(80, 104, 113, 0.85));
+  border: 1px solid @color4;
+  border-radius: 10px;
+  color: #ffffff;
+  padding: 2px 7px;
+  margin: 1px 2px;
+  box-shadow: 0 0 8px rgba(125, 138, 101, 0.3);
+  font-weight: 700;
+}
+
+#custom-bluetooth.single-pill {
+  background: linear-gradient(135deg, rgba(38, 77, 96, 0.85), rgba(80, 104, 113, 0.85));
+  border: 1px solid @color4;
+  border-radius: 10px;
+  color: #ffffff;
+  padding: 2px 7px;
+  margin: 1px 2px;
+  box-shadow: 0 0 8px rgba(125, 138, 101, 0.3);
+  font-weight: 700;
+}
+
+/* Merged Unified Tablet (When BOTH are on) */
+#custom-wifi.merged-left {
+  background: linear-gradient(135deg, rgba(38, 77, 96, 0.9), rgba(58, 88, 105, 0.9));
+  border: 1px solid @color4;
+  border-right: none;
+  border-top-left-radius: 10px;
+  border-bottom-left-radius: 10px;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  color: #ffffff;
+  padding: 2px 4px 2px 7px;
+  margin: 1px 0 1px 2px;
+  box-shadow: -2px 0 8px rgba(125, 138, 101, 0.3);
+  font-weight: 700;
+}
+
+#custom-bluetooth.merged-right {
+  background: linear-gradient(135deg, rgba(58, 88, 105, 0.9), rgba(80, 104, 113, 0.9));
+  border: 1px solid @color4;
+  border-left: none;
+  border-top-right-radius: 10px;
+  border-bottom-right-radius: 10px;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  color: #ffffff;
+  padding: 2px 7px 2px 4px;
+  margin: 1px 2px 1px 0;
+  box-shadow: 2px 0 8px rgba(125, 138, 101, 0.3);
+  font-weight: 700;
+}
+
+#custom-wifi:hover,
+#custom-bluetooth:hover {
+  background: @color2;
+  color: #ffffff;
+}
+
+/* Network Speed: Far Right beside Power Button */
+#custom-netspeed {
+  background: transparent;
+  color: @foreground;
+  padding: 2px 6px;
+  margin: 1px 2px;
+  font-weight: 600;
+  font-size: 10px;
+  transition: all 0.2s ease;
+}
+
+#custom-netspeed:hover {
+  color: #ffffff;
+}
+
+/* System Tray */
+#tray {
+  padding: 0 4px;
+  margin: 1px 2px;
+}
+
+#tray > .passive {
+  -gtk-icon-effect: dim;
+}
+
+#tray > .needs-attention {
+  -gtk-icon-effect: highlight;
+}
+
+#tray > widget {
+  padding: 0 3px;
+  margin: 0 1px;
+  transition: all 0.2s ease;
+}
+
+#tray > widget:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+}
+
+/* Power Button: Far Right Corner */
+#custom-power {
+  background: rgba(235, 75, 75, 0.18);
+  color: #ff6b6b;
+  font-size: 11px;
+  padding: 2px 7px;
+  margin: 1px 1px;
+  border-radius: 10px;
+  border: 1px solid rgba(235, 75, 75, 0.3);
+  transition: all 0.2s ease;
+}
+
+#custom-power:hover {
+  background: #ff4757;
+  color: #ffffff;
+  box-shadow: 0 0 6px rgba(255, 71, 87, 0.5);
+}
+
+/* Tooltips */
+tooltip {
+  background: rgba(15, 25, 30, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 10px;
+  padding: 6px 12px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.55);
+}
+
+tooltip label {
+  color: @foreground;
+  font-size: 11px;
+}

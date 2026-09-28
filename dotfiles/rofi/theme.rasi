@@ -1,0 +1,67 @@
+/* Берем цвета из обоев (pywal) */
+@import "~/.cache/wal/colors-rofi-dark.rasi"
+
+* {
+    /* Делаем единый темный полупрозрачный фон (70% непрозрачности) */
+    bg-transparent: rgba(15, 15, 15, 0.7);
+    
+    /* Сбрасываем лишние фоны у остальных элементов */
+    background-color: transparent;
+    text-color: @foreground;
+    margin: 0;
+}
+
+window {
+    background-color: @bg-transparent; /* Наш полупрозрачный фон */
+    border-radius: 15px;
+    border: 2px solid;
+    border-color: @selected-normal-background; /* Цвет рамки берем из обоев */
+    padding: 20px;
+    width: 600px;
+}
+
+inputbar {
+    padding: 12px;
+    border-radius: 10px;
+    background-color: rgba(255, 255, 255, 0.05); /* Легкая подсветка поиска */
+    children: [ prompt, entry ];
+    margin: 0 0 15px 0; /* Отступ вниз до списка */
+}
+
+prompt {
+    text-color: @selected-normal-background; /* Акцент из обоев */
+    padding: 0 10px 0 0;
+}
+
+entry {
+    placeholder: "Search...";
+    text-color: @foreground;
+}
+
+listview {
+    spacing: 5px;
+    scrollbar: false;
+}
+
+element {
+    padding: 8px 10px;
+    border-radius: 10px;
+    background-color: transparent; /* Обычные кнопки прозрачные */
+}
+
+element selected.normal {
+    /* При наведении кнопка загорается цветом из обоев */
+    background-color: @selected-normal-background; 
+    text-color: @background;
+}
+
+element-text, element-icon {
+    background-color: inherit;
+    text-color: inherit;
+    vertical-align: 0.5;
+}
+
+element-icon {
+    size: 1.2em;
+    margin: 0 10px 0 0;
+}

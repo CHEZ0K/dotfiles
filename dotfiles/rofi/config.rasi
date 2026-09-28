@@ -1,0 +1,41 @@
+configuration {
+    /* Основные режимы и терминал */
+    modes: "drun,run";
+    font: "JetBrainsMono Nerd Font 11";
+    terminal: "footclient";
+
+    /* Иконки */
+    show-icons: true;
+    icon-theme: "";
+
+    /* Расположение (4 = слева по центру) и геометрия */
+    location: 4;
+    xoffset: 0;
+    yoffset: 0;
+
+    /* Поведение окна */
+    fixed-num-lines: true;
+    click-to-exit: false;
+    cycle: true;
+
+    /* Настройки поиска и сортировки */
+    matching: "fuzzy";
+    sort: true;
+    sorting-method: "fzf";
+    case-sensitive: false;
+
+    /* История */
+    disable-history: true;
+    max-history-size: 5;
+
+    /* Форматирование строк */
+    drun-display-format: "{name}";
+    window-format: "{w}    {c}   {t}";
+
+    /* Бесконечный таймер (таймаут выключен) */
+    timeout {
+        action: "kb-cancel";
+        delay: 0;
+    }
+}
+@theme "theme"

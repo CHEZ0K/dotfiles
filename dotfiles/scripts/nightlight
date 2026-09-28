@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+# Night Light controller for Wayland (Niri) using wlsunset
+
+WLSUNSET="/home/chezok/.local/bin/wlsunset"
+DEFAULT_TEMP=2800
+STATE_FILE="/tmp/nightlight_temp"
+
+get_temp() {
+    if [[ -f "$STATE_FILE" ]]; then
+        local t
+        t=$(cat "$STATE_FILE" 2>/dev/null)
+        if [[ "$t" =~ ^[0-9]+$ ]] && [ "$t" -ge 1000 ] && [ "$t" -le 6500 ]; then
+            echo "$t"
+            return
+        fi
+    fi
+    echo "$DEFAULT_TEMP"
+}
+
+stop_wlsunset() {
+    systemctl --user stop wlsunset 2>/dev/null
+    pkill -x wlsunset 2>/dev/null
+}
+
+start_wlsunset() {
+    local temp="$1"
+    local high_temp=$((temp + 1))
+    stop_wlsunset
+    if systemctl --user is-system-running >/dev/null 2>&1; then
+        systemd-run --user --unit=wlsunset "$WLSUNSET" -t "$temp" -T "$high_temp" -s 00:00 -S 23:59 >/dev/null 2>&1
+    else
+        setsid "$WLSUNSET" -t "$temp" -T "$high_temp" -s 00:00 -S 23:59 </dev/null >/dev/null 2>&1 &
+    fi
+}
+
+cmd="${1:-toggle}"
+
+case "$cmd" in
+    on)
+        temp="${2:-$(get_temp)}"
+        echo "$temp" > "$STATE_FILE"
+        start_wlsunset "$temp"
+        ;;
+    off)
+        stop_wlsunset
+        ;;
+    toggle)
+        if pgrep -x wlsunset >/dev/null 2>&1; then
+            stop_wlsunset
+        else
+            temp="${2:-$(get_temp)}"
+            echo "$temp" > "$STATE_FILE"
+            start_wlsunset "$temp"
+        fi
+        ;;
+    status)
+        if pgrep -x wlsunset >/dev/null 2>&1; then
+            echo "active"
+        else
+            echo "inactive"
+        fi
+        ;;
+    temp)
+        get_temp
+        ;;
+    *)
+        echo "Usage: nightlight {on [temp]|off|toggle [temp]|status|temp}"
+        exit 1
+        ;;
+esac

@@ -1,0 +1,622 @@
+@import "/home/chezok/.cache/wal/colors-waybar.css";
+
+/* Переменные для дорожки слайдера */
+:root {
+  --slider-height: 2px;
+  --slider-radius: 1px;
+  --slider-knob-size: 14px;
+  --slider-knob-radius: 7px;
+  --color-slider-track: rgba(255, 255, 255, 0.35);
+  --color-accent-slider: @color4;
+  --color-accent-primary: @color5;
+  --shadow-soft: none;
+  --surface-outline-width: 0px;
+}
+
+/* Базовый шрифт */
+*:not(.material-symbol):not(.material-symbols-rounded):not(.icon) {
+  font-family: "JetBrainsMono Nerd Font", "Adwaita Sans", "FreeSans", sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+/* Иконки Material Symbols */
+.material-symbol,
+.material-symbols-rounded,
+.icon {
+  font-family: "Material Symbols Rounded", "Material Icons";
+  font-feature-settings: "liga" 1;
+  font-style: normal;
+  font-weight: 400;
+}
+
+window,
+.widget,
+.widget-item,
+.bar button,
+.bar label {
+  background-color: transparent;
+  color: @foreground;
+  box-shadow: none;
+  border: none;
+  min-height: 0;
+  padding: 0;
+}
+
+.bar label,
+.widget label,
+.clock label,
+.cpu label,
+.battery label {
+  padding-top: 1px;
+  padding-bottom: 1px;
+  margin: 0;
+}
+
+.bar,
+sectioned-bar.bar {
+  min-height: 28px;
+  background: transparent;
+  background-color: transparent;
+  background-image: none;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+}
+
+/* ==================== BASE ISLAND CONTAINERS ==================== */
+
+.bar-section--left,
+.bar-section--right,
+.bar-section--center {
+  background: transparent;
+  background-color: transparent;
+  background-image: none;
+  border: none;
+  box-shadow: none;
+  padding: 0 16px;
+  min-height: 28px;
+}
+
+
+.widget,
+.widget-wrapper,
+.widget-item {
+  background-color: transparent;
+  background-image: none;
+  box-shadow: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  min-height: 0;
+}
+
+.widget:not(.media) {
+  background-color: transparent;
+  background-image: none;
+  border: none;
+  box-shadow: none;
+}
+
+.widget:not(.media) > overlay > .content,
+.widget:not(.media) > .content,
+.widget:not(.media) .content {
+  padding: 1px 2px;
+}
+
+.widget:not(.widget-group):not(.taskbar):not(.media) > overlay > .content > *:not(:last-child),
+.widget:not(.widget-group):not(.taskbar):not(.media) > .content > *:not(:last-child) {
+  margin-right: 3px;
+}
+
+/* ==================== MEDIA WIDGET (ON BAR) ==================== */
+
+.media {
+  background: linear-gradient(135deg, alpha(@color5, 0.9), alpha(@color1, 0.85));
+  border: 1px solid alpha(@color5, 0.5);
+  border-radius: 10px;
+  color: #ffffff;
+  padding: 0;
+  margin: 1px 2px;
+  font-weight: 600;
+}
+
+.media > overlay > .content,
+.media .content {
+  padding: 1px 5px;
+}
+
+.media.media-paused {
+  opacity: 0.7;
+}
+
+.media:hover {
+  background: linear-gradient(135deg, alpha(@color5, 1.0), alpha(@color1, 0.95));
+}
+
+.media-art-small,
+.media-art-small image,
+.media-art-small picture {
+  border-radius: 6px;
+}
+
+/* Кнопки на самой панели */
+.media .media-controls {
+  margin-left: 1px;
+}
+
+.media .media-control-btn,
+.media .media-control-btn-primary {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  border-radius: 4px;
+  min-width: 16px;
+  min-height: 16px;
+  padding: 0 1px;
+  margin: 0;
+  color: #ffffff;
+}
+
+.media .media-control-btn:hover,
+.media .media-control-btn-primary:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* ==================== BATTERY WIDGET ==================== */
+
+.battery,
+.widget.battery,
+.battery > overlay > .content,
+.battery > .content,
+.battery * {
+  background: transparent;
+  background-color: transparent;
+  background-image: none;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+}
+
+.widget.battery:hover,
+.widget.battery:hover > overlay > .content,
+.widget.battery:hover * {
+  background: transparent;
+  background-color: transparent;
+}
+
+.battery {
+  color: @foreground;
+  opacity: 0.85;
+  padding: 1px 3px;
+  margin: 0 1px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.battery label {
+  font-size: 10px;
+  font-weight: 600;
+  margin-left: 2px;
+  color: @foreground;
+}
+
+.battery .battery-icon,
+.battery .icon {
+  font-size: 12px;
+}
+
+.battery:hover,
+.battery:hover label {
+  opacity: 1.0;
+  color: #ffffff;
+}
+
+/* ==================== CLOCK WIDGET (CENTER ISLAND) ==================== */
+
+.clock,
+.widget.clock {
+  background: transparent;
+  background-color: transparent;
+  background-image: none;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+  padding: 0;
+  margin: 0;
+}
+
+.clock-date {
+  color: @foreground;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 4px;
+  margin: 0;
+  transition: all 0.2s ease;
+}
+
+.clock:hover .clock-date {
+  color: #ffffff;
+}
+
+.clock-pill,
+.clock-time {
+  background: linear-gradient(135deg, alpha(@color5, 0.9), alpha(@color1, 0.85));
+  border: 1px solid alpha(@color5, 0.5);
+  border-radius: 10px;
+  color: #ffffff;
+  padding: 1px 5px;
+  margin: 1px 1px;
+  font-weight: 600;
+  font-size: 10px;
+  transition: all 0.2s ease;
+}
+
+.clock-pill:hover,
+.clock:hover .clock-pill {
+  background: linear-gradient(135deg, alpha(@color5, 1.0), alpha(@color1, 0.95));
+}
+
+/* ==================== TOOLTIPS (DISABLED) ==================== */
+tooltip,
+.tooltip-window {
+  opacity: 0;
+}
+
+/* ==================== MEMORY & CPU WIDGETS ==================== */
+.memory,
+.widget.memory,
+.cpu,
+.widget.cpu {
+  background: transparent;
+  background-color: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 1px 2px;
+  margin: 0 1px;
+  color: @foreground;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.memory:hover,
+.widget.memory:hover,
+.cpu:hover,
+.widget.cpu:hover {
+  color: #ffffff;
+}
+
+/* ==================== QUICK SETTINGS & TRAY ==================== */
+.quick-settings,
+.widget.quick-settings,
+.tray,
+.widget.tray {
+  background: transparent;
+  background-color: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 1px 4px;
+  margin: 0 1px;
+  color: @foreground;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.quick-settings:hover,
+.widget.quick-settings:hover,
+.tray:hover,
+.widget.tray:hover {
+  color: #ffffff;
+}
+
+/* Straight seams between buttons/widgets - no notches / dimples */
+.bar-section button,
+.bar button,
+.widget-group button,
+.widget-item,
+.widget-wrapper,
+.widget {
+  border-radius: 0;
+}
+
+/* Music pill and Clock pill MUST stay rounded with 10px corners */
+.widget.media,
+.media,
+.widget-wrapper.media,
+.widget-item.media {
+  background: linear-gradient(135deg, alpha(@color5, 0.9), alpha(@color1, 0.85));
+  border: 1px solid alpha(@color5, 0.5);
+  border-radius: 10px;
+  color: #ffffff;
+  padding: 0;
+  margin: 1px 2px;
+  font-weight: 600;
+}
+
+.clock-pill,
+label.clock-pill,
+.clock-time,
+label.clock-time {
+  background: linear-gradient(135deg, alpha(@color5, 0.9), alpha(@color1, 0.85));
+  border: 1px solid alpha(@color5, 0.5);
+  border-radius: 10px;
+  color: #ffffff;
+  padding: 1px 5px;
+  margin: 1px 1px;
+  font-weight: 600;
+  font-size: 10px;
+}
+
+.widget.battery,
+.widget.memory,
+.widget.cpu,
+.widget.quick-settings,
+.widget.tray,
+.battery,
+.memory,
+.cpu,
+.quick-settings,
+.tray {
+  background: transparent;
+  background-color: transparent;
+  background-image: none;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+}
+
+.battery.battery-charging,
+.battery .battery-charging {
+  color: #a6cc33;
+}
+
+.battery.battery-low,
+.battery .battery-low {
+  color: #ef4444;
+}
+
+/* ==================== POPOVERS (GLASS TRANSLUCENT) ==================== */
+window.layer-shell-popover {
+  background: transparent;
+  background-color: transparent;
+}
+
+.popover,
+.surface-popover,
+.system-popover,
+.battery-popover,
+.media-popover,
+.weather-popover,
+.calendar-popover,
+.quick-settings-popover,
+.quick-settings-window,
+.notification-popover,
+.notification-toast-container,
+popover.widget-menu > contents {
+  background: rgba(14, 12, 10, 0.45);
+  background-color: rgba(14, 12, 10, 0.45);
+  background-image: none;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+}
+
+.system-popover .vp-card,
+.system-popover .system-section-card,
+.system-section-card,
+.system-expander-content,
+.system-section-card:hover {
+  background: rgba(255, 255, 255, 0.04);
+  background-color: rgba(255, 255, 255, 0.04);
+  border-radius: 10px;
+}
+
+.battery-popover {
+  padding: 14px;
+}
+
+.battery-popover .battery-popover-percent {
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.battery-popover .battery-popover-profile-button {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: @foreground;
+  padding: 4px 8px;
+  font-size: 11px;
+}
+
+.battery-popover .battery-popover-profile-button:hover {
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+}
+
+.battery-popover .battery-popover-profile-button.button-accent {
+  background: @color1;
+  color: #ffffff;
+}
+
+/* ==================== MEDIA POPOVER ==================== */
+.media-popover,
+.popover.media-popover {
+  border-radius: 14px;
+  box-shadow: none;
+  padding: 12px;
+  min-width: 320px;
+}
+
+/* Большая обложка альбома */
+.media-art,
+.media-art image,
+.media-art picture,
+.media-art-placeholder {
+  border-radius: 6px;
+  background-color: transparent;
+}
+
+/* Полностью скрываем кнопку Pop out */
+.media-popout-btn,
+button.media-popout-btn,
+.media-popout-btn * {
+  opacity: 0;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  border: none;
+  font-size: 0;
+}
+
+/* Скрываем кнопки управления внутри поповера */
+.media-popover .media-control-btn,
+.media-popover .media-control-btn-primary {
+  opacity: 0;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  font-size: 0;
+  border: none;
+}
+
+.media-popover-dance {
+  margin: 0;
+  padding: 0;
+}
+
+/* Полоса перемотки трека в поповере: тонкая линия 2px */
+.media-seek {
+  margin-top: 4px;
+  min-height: 24px;
+  padding-bottom: 4px;
+}
+
+.media-time {
+  font-size: 9px;
+  margin-top: 2px;
+}
+
+.media-seek-slider {
+  min-height: 16px;
+  margin: 0;
+  padding: 0;
+}
+
+.media-seek-slider trough {
+  min-height: 2px;
+  min-width: 140px;
+  border-radius: 1px;
+  background-color: rgba(255, 255, 255, 0.35);
+  border: none;
+  box-shadow: none;
+}
+
+.media-seek-slider highlight {
+  min-height: 2px;
+  border-radius: 1px;
+  background-color: @color4;
+  background-image: none;
+  border: none;
+  box-shadow: none;
+}
+
+.media-seek-slider slider {
+  min-height: 14px;
+  min-width: 14px;
+  border-radius: 7px;
+  background-color: #ffffff;
+  border: none;
+  box-shadow: none;
+  margin: -6px 0;
+  padding: 0;
+}
+
+/* ==================== RIGHT ISLAND (DANCING KONATA ON BAR) ==================== */
+
+.cat,
+.custom-cat {
+  padding: 0 4px;
+  margin: 0;
+  min-width: 24px;
+  min-height: 24px;
+}
+
+.cat image,
+.custom-cat image {
+  min-width: 24px;
+  min-height: 24px;
+}
+
+/* ==================== NOTIFICATIONS IN QUICK SETTINGS ==================== */
+.notification-header {
+  padding: 8px 4px 4px 4px;
+  margin-top: 14px;
+}
+
+.notification-header label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.notification-scroll {
+  padding: 4px 0;
+}
+
+.notification-row {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+}
+
+.notification-row:hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.notification-app-name {
+  font-size: 11px;
+  font-weight: 700;
+  color: @color4;
+}
+
+.notification-summary {
+  font-size: 12px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.notification-body {
+  font-size: 11px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.notification-empty {
+  padding: 60px 16px;
+}
+
+.notification-empty-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+
+/* HIDE AUDIO ICON IN QUICK SETTINGS BAR */
+.quick-settings .content > :first-child,
+.quick-settings .content > :first-child * {
+    min-width: 0;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    font-size: 0px;
+    opacity: 0;
+    color: transparent;
+}

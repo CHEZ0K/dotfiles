@@ -1,0 +1,10 @@
+#!/bin/bash
+export LANG=ru_RU.UTF-8
+export LANGUAGE=ru:ru_RU:en
+export LC_ALL=ru_RU.UTF-8
+export LD_PRELOAD=/home/chezok/.local/lib/libnemolocale.so${LD_PRELOAD:+:$LD_PRELOAD}
+
+# Sync icon colors with current wallpaper palette
+/home/chezok/.local/bin/sync-icon-colors 2>/dev/null &
+
+exec /usr/bin/nemo "$@"

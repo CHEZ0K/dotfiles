@@ -1,0 +1,257 @@
+
+
+
+
+
+
+
+
+
+/* ==========================================================================
+   Zen Browser - Seamless Unified Pywal Glass Theme
+   ========================================================================== */
+
+@import url("file:///home/chezok/.cache/wal/colors.css");
+
+:root {
+    /* Pywal Dynamic Color Integration */
+    --zen-main-browser-background: transparent !important;
+    --zen-main-browser-background-toolbar: transparent !important;
+    --zen-themed-toolbar-bg-transparent: transparent !important;
+    --zen-sidebar-background: color-mix(in srgb, var(--background, #0c0c0d) 55%, transparent) !important;
+    --zen-appcontent-border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    --zen-colors-primary: var(--color5, #8CACAD) !important;
+    --zen-colors-secondary: var(--color4, #A1A79F) !important;
+    --zen-colors-tertiary: var(--color1, #6C909A) !important;
+    --zen-primary-color: var(--color5, #8CACAD) !important;
+    --toolbar-bgcolor: transparent !important;
+    --lwt-accent-color: transparent !important;
+    --lwt-text-color: var(--foreground, #dbdad3) !important;
+    --toolbar-field-background-color: transparent !important;
+    --toolbar-field-color: var(--foreground, #dbdad3) !important;
+    --toolbar-color: var(--foreground, #dbdad3) !important;
+    --zen-transparent-browser-background: transparent !important;
+}
+
+/* 1. Полная прозрачность базовых окон и оболочек для размытия Niri */
+:root,
+#main-window,
+#main-window[tabsintitlebar],
+#titlebar,
+#browser,
+#zen-main-app-wrapper,
+#zen-tabbox-wrapper,
+#zen-appcontent-wrapper,
+#zen-appcontent-navbar-wrapper,
+#zen-appcontent-navbar-container {
+    background: transparent !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+}
+
+/* 2. ПОЛНОСТЬЮ ОТКЛЮЧАЕМ ВСТРОЕННЫЕ ГРАДИЕНТЫ И ФОНЫ ZEN */
+#zen-browser-background,
+#zen-toolbar-background,
+.zen-browser-generic-background {
+    display: none !important;
+    opacity: 0 !important;
+    background: transparent !important;
+    background-image: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    pointer-events: none !important;
+}
+
+.zen-browser-generic-background::before,
+.zen-browser-generic-background::after,
+.zen-browser-grain {
+    display: none !important;
+    opacity: 0 !important;
+    background: transparent !important;
+    background-image: none !important;
+}
+
+/* 3. ЕДИНЫЙ ЦЕЛЬНЫЙ САЙДБАР (Стеклянная матовая панель в цвет обоев) */
+#navigator-toolbox {
+    background: color-mix(in srgb, var(--background, #0c0c0d) 55%, transparent) !important;
+    background-color: color-mix(in srgb, var(--background, #0c0c0d) 55%, transparent) !important;
+    background-image: none !important;
+    backdrop-filter: blur(24px) !important;
+    -webkit-backdrop-filter: blur(24px) !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: none !important;
+}
+
+/* 4. УБИРАЕМ ВСЕ ВНУТРЕННИЕ КВАДРАТЫ И РАЗРОЗНЕННЫЕ ФОНЫ ВНУТРИ САЙДБАРА */
+.zen-toolbar-background,
+.zen-browser-generic-background {
+    background-image: none !important;
+}
+
+#navigator-toolbox #nav-bar,
+#navigator-toolbox #zen-sidebar-top-buttons,
+#navigator-toolbox #zen-tabs-wrapper,
+#navigator-toolbox #zen-sidebar-foot-buttons,
+#navigator-toolbox #zen-workspaces-button,
+#navigator-toolbox #zen-sidebar-icons-wrapper,
+#navigator-toolbox .browser-toolbar,
+#navigator-toolbox toolbar,
+#navigator-toolbox #tabbrowser-arrowscrollbox-periphery,
+#navigator-toolbox #tabbrowser-arrowscrollbox {
+    background: transparent !important;
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+/* 5. УБИРАЕМ КНОПКУ/ИНДИКАТОР SPACE */
+.zen-current-workspace-indicator,
+#zen-current-workspace-indicator-container {
+    display: none !important;
+}
+
+/* 6. УБИРАЕМ ПЛЮСИК СНИЗУ СПРАВА */
+#zen-create-new-button {
+    display: none !important;
+}
+
+/* 7. АДРЕСНАЯ СТРОКА (URL bar) */
+#urlbar-container {
+    padding: 2px 4px !important;
+}
+
+#urlbar-background {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 8px !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+}
+
+#urlbar[focused="true"] > #urlbar-background {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-color: var(--color5, #8CACAD) !important;
+    box-shadow: 0 0 10px color-mix(in srgb, var(--color5, #8CACAD) 30%, transparent) !important;
+}
+
+/* Выпадающее меню поиска (Breakout popup) — чистая прозрачность от обоев */
+#urlbar[breakout][breakout-extend] > #urlbar-background {
+    background: color-mix(in srgb, var(--background, #0c0c0d) 55%, transparent) !important;
+    background-color: color-mix(in srgb, var(--background, #0c0c0d) 55%, transparent) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    backdrop-filter: blur(24px) !important;
+    -webkit-backdrop-filter: blur(24px) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* При раскрытии поиска скрываем окно под ним, чтобы была видна только прозрачность от обоев */
+:root:has(#urlbar[breakout-extend]) .browserSidebarContainer,
+:root:has(#urlbar[breakout-extend]) #zen-appcontent-wrapper {
+    opacity: 0 !important;
+    transition: opacity 0.15s ease-in-out;
+}
+
+.urlbarView {
+    background: transparent !important;
+    color: var(--foreground, #dbdad3) !important;
+}
+
+.urlbarView-row:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-radius: 6px !important;
+}
+
+/* 8. ВКЛАДКИ (Tabs) */
+.tabbrowser-tab .tab-background {
+    background: color-mix(in srgb, var(--background, #0c0c0d) 60%, transparent) !important;
+    backdrop-filter: blur(16px) !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) !important;
+    border: 1px solid rgba(255, 255, 255, 0.06) !important;
+    border-radius: 8px !important;
+}
+
+.tabbrowser-tab:hover .tab-background {
+    background: rgba(255, 255, 255, 0.06) !important;
+}
+
+.tabbrowser-tab[selected="true"] .tab-background,
+.tabbrowser-tab[multiselected="true"] .tab-background {
+    background: color-mix(in srgb, var(--color5, #8CACAD) 25%, transparent) !important;
+    border: 1px solid color-mix(in srgb, var(--color5, #8CACAD) 40%, transparent) !important;
+    box-shadow: none !important;
+}
+
+/* 9. НИЖНЯЯ СЕКЦИЯ КНОПОК */
+#zen-sidebar-foot-buttons toolbarbutton,
+#zen-workspaces-button,
+.zen-workspace-button {
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+}
+
+#zen-sidebar-foot-buttons toolbarbutton:hover,
+.zen-workspace-button:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-radius: 6px !important;
+}
+
+/* 10. КОМПАКТНЫЙ РЕЖИМ (Авто-скрытие и всплытие при наведении) */
+.zen-toolbar-background,
+#titlebar .zen-toolbar-background,
+#navigator-toolbox .zen-toolbar-background {
+    background: color-mix(in srgb, var(--background, #0c0c0d) 55%, transparent) !important;
+    background-color: color-mix(in srgb, var(--background, #0c0c0d) 55%, transparent) !important;
+    backdrop-filter: blur(24px) !important;
+    -webkit-backdrop-filter: blur(24px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+}
+
+:root[zen-compact-mode='true'] #navigator-toolbox,
+:root[zen-compact-mode='true'] #titlebar,
+#navigator-toolbox[zen-has-hover],
+#navigator-toolbox[zen-user-show] {
+    background: color-mix(in srgb, var(--background, #0c0c0d) 55%, transparent) !important;
+    background-color: color-mix(in srgb, var(--background, #0c0c0d) 55%, transparent) !important;
+    backdrop-filter: blur(24px) !important;
+    -webkit-backdrop-filter: blur(24px) !important;
+}
+
+/* 11. САМО ОКНО САЙТА: матовое полупрозрачное стекло в цвет сайдбара и обоев (Pywal) */
+#tabbrowser-tabbox,
+#tabbrowser-tabpanels,
+.browserContainer,
+.browserStack,
+findbar {
+    background: transparent !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+}
+
+.browserSidebarContainer {
+    background: color-mix(in srgb, var(--background, #0c0c0d) 55%, transparent) !important;
+    background-color: color-mix(in srgb, var(--background, #0c0c0d) 55%, transparent) !important;
+    backdrop-filter: blur(24px) !important;
+    -webkit-backdrop-filter: blur(24px) !important;
+    border-radius: 10px !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+browser[type="content"],
+browser[type="content"]:not([transparent="true"]),
+browser[type="content"][transparent="true"] {
+    background: transparent !important;
+    background-color: transparent !important;
+}
+
+#zen-appcontent-wrapper,
+#zen-tabbox-wrapper {
+    background: transparent !important;
+    background-color: transparent !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
