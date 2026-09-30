@@ -1,0 +1,12 @@
+[Unit]
+Description=Automount removable media using udisks2
+Documentation=man:udiskie(8)
+After=graphical-session.target
+
+[Service]
+ExecStart=/usr/bin/udiskie --automount --notify --smart-tray -f nemo
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=default.target

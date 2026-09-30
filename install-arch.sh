@@ -566,11 +566,12 @@ EOF
             ok "pywal палитра сгенерирована с обоями: $WALL"
         fi
 
-        # Включение сокетов пользователя
         mkdir -p "/home/${USERNAME}/.config/systemd/user/sockets.target.wants"
+        mkdir -p "/home/${USERNAME}/.config/systemd/user/default.target.wants"
         ln -sf "/usr/lib/systemd/user/pipewire.socket" "/home/${USERNAME}/.config/systemd/user/sockets.target.wants/pipewire.socket" 2>/dev/null || true
         ln -sf "/usr/lib/systemd/user/pipewire-pulse.socket" "/home/${USERNAME}/.config/systemd/user/sockets.target.wants/pipewire-pulse.socket" 2>/dev/null || true
         ln -sf "/usr/lib/systemd/user/foot-server.socket" "/home/${USERNAME}/.config/systemd/user/sockets.target.wants/foot-server.socket" 2>/dev/null || true
+        ln -sf "/home/${USERNAME}/.config/systemd/user/udiskie.service" "/home/${USERNAME}/.config/systemd/user/default.target.wants/udiskie.service" 2>/dev/null || true
 
         # Назначаем права пользователя chezok на все файлы
         chown -R "${USERNAME}:${USERNAME}" "/home/${USERNAME}"
