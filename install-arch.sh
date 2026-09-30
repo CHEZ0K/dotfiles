@@ -46,106 +46,7 @@ LOCALE_LANG="en_US.UTF-8"
 LOCALE_RU="ru_RU.UTF-8"
 KEYMAP="us"
 
-# Полный список пакетов
-PACMAN_PKGS=(
-    # Base
-    base base-devel linux-firmware sudo git curl nano vim
 
-    # CachyOS ядро
-    linux-cachyos-bore linux-cachyos-bore-headers
-    cachyos-settings scx-scheds
-
-    # Загрузчик и ФС
-    grub efibootmgr xfsprogs
-
-    # Сеть и bluetooth
-    networkmanager bluez bluez-utils openssh
-
-    # Wayland / Niri стек
-    wayland niri sddm xwayland-satellite
-    wl-clipboard cliphist
-
-    # Звук
-    pipewire pipewire-pulse wireplumber pavucontrol
-
-    # GPU (базовый стек, конкретные драйверы ставятся в detect_and_install_gpu)
-    mesa vulkan-icd-loader
-
-    # Утилиты и инструменты
-    btop htop neofetch aria2 playerctl
-    brightnessctl power-profiles-daemon
-    libnotify matugen
-
-    # Терминал и шрифты
-    foot ttf-jetbrains-mono-nerd ttf-nerd-fonts-symbols-mono noto-fonts-emoji
-
-    # Файловый менеджер
-    nemo
-
-    # Браузер (Zen через AUR, firefox как запасной)
-    firefox
-
-    # Медиа и зрение
-    mpv
-
-    # Ночник
-    # wlsunset (через AUR или здесь)
-
-    # Иконки и темы GTK
-    nwg-look
-
-    # Разное
-    grim slurp
-    nodejs npm
-    rofi
-    cava
-    python-pywal
-    qt6-5compat qt6-multimedia qt6-positioning qt6-sensors
-    qt6-virtualkeyboard
-
-    # Шрифты/иконки
-    noto-fonts
-
-
-    # Системные
-    upower acpi lm_sensors
-
-    # Для quickshell и vibepanel
-    qt6-declarative
-)
-
-AUR_PKGS=(
-    # Браузер
-    zen-browser-bin
-
-    # Мессенджер
-    ayugram-desktop-bin
-
-    # Панель и уведомления
-    vibepanel-git
-    swaync
-
-    # Обои
-    awww
-    linux-wallpaperengine-git
-
-    # Pywal интеграция
-    python-pywal
-
-    # Музыкальные субтитры
-    sptlrx-bin
-    waylyrics
-
-    # Терминальные украшения
-    unimatrix-git
-    lavat
-    genact
-    tty-clock
-    pipes.sh
-
-    # Курсор
-    xcursor-furina-git
-)
 
 # =============================================================================
 # ФАЗА 1: УСТАНОВКА (из Arch ISO)
@@ -692,34 +593,34 @@ install_pacman_packages() {
     local groups=(
         # Сеть, Bluetooth и SSH
         "bluez bluez-utils openssh"
-        # Wayland стек
+
+        # Графический стек и Niri
         "wayland niri sddm xwayland-satellite wl-clipboard cliphist"
-        # Звук
+
+        # Звук (PipeWire)
         "pipewire pipewire-pulse wireplumber pavucontrol"
-        # Утилиты
-        "btop htop neofetch aria2 playerctl brightnessctl power-profiles-daemon libnotify matugen"
+
+        # Системные мониторы и утилиты
+        "btop htop fastfetch neofetch aria2 playerctl brightnessctl power-profiles-daemon libnotify matugen"
+
         # Терминал и шрифты
         "foot ttf-jetbrains-mono-nerd ttf-nerd-fonts-symbols-mono noto-fonts-emoji noto-fonts"
+
         # Файловый менеджер и автомонтирование флешек (NTFS, FAT, exFAT)
         "nemo udisks2 udiskie ntfs-3g dosfstools exfatprogs"
-        # Браузер
-        "firefox"
-        # Медиа
-        "mpv cava"
-        # Pywal
-        "python-pywal"
-        # Qt6
-        "qt6-5compat qt6-multimedia qt6-positioning qt6-sensors qt6-virtualkeyboard qt6-declarative"
-        # Rofi
-        "rofi"
-        # Скриншоты
-        "grim slurp"
-        # Системные
-        "upower acpi lm_sensors"
-        # Дополнительно
-        "nodejs npm nwg-look"
-        # KDE зависимости для quickshell/vibepanel
+
+        # Обои и уведомления (из официального репозитория Arch extra)
+        "awww swaync"
+
+        # Браузер и медиаплеер
+        "firefox mpv cava"
+
+        # Qt6 и библиотеки для quickshell/vibepanel
+        "qt6-5compat qt6-multimedia qt6-positioning qt6-sensors qt6-virtualkeyboard qt6-declarative quickshell"
         "kconfig kcoreaddons kdeclarative kiconthemes kirigami"
+
+        # Меню, скриншоты, датчики и генераторы
+        "rofi grim slurp upower acpi lm_sensors nodejs npm nwg-look genact"
     )
 
     for group in "${groups[@]}"; do
@@ -736,18 +637,23 @@ install_aur_packages() {
     fi
 
     local aur_groups=(
-        # Браузер и мессенджер
+        # Браузер и мессенджер (готовые быстрые бинарники)
         "zen-browser-bin ayugram-desktop-bin"
-        # Панель и уведомления
-        "vibepanel-git swaync"
-        # Обои
-        "awww linux-wallpaperengine-git"
-        # Музыка
+
+        # Панель управления Vibepanel
+        "vibepanel-git"
+
+        # Цветовые темы pywal
+        "python-pywal"
+
+        # Живые обои
+        "linux-wallpaperengine-git"
+
+        # Музыкальные утилиты
         "sptlrx-bin waylyrics"
-        # Терминальные украшения
-        "unimatrix-git lavat genact tty-clock pipes.sh"
-        # Курсор
-        "xcursor-furina-git"
+
+        # Терминальные эффекты
+        "unimatrix-git lavat tty-clock pipes.sh"
     )
 
     for group in "${aur_groups[@]}"; do
