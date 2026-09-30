@@ -269,8 +269,77 @@ MIRRORS
 
     ok "Mirrorlist настроен."
 
-    # ─── Подключение CachyOS репозиториев НА ISO ДО PACSTRAP ───
-    header "Подключение CachyOS репозиториев на Live ISO..."
+    # ─── Pacstrap (стандартная надёжная база Arch Linux) ───
+    header "Установка базовой системы Arch Linux (pacstrap)..."
+
+    pacstrap -K /mnt \
+        base base-devel \
+        linux linux-headers linux-firmware \
+        grub efibootmgr xfsprogs \
+        networkmanager sudo git curl nano vim
+
+    ok "Базовая система Arch Linux успешно установлена."
+
+    # ─── fstab ───
+    header "Генерация fstab..."
+
+    genfstab -U /mnt >> /mnt/etc/fstab
+    info "Сгенерированный fstab:"
+    cat /mnt/etc/fstab
+
+    ok "fstab сгенерирован."
+
+    # ─── Копирование скрипта в chroot ───
+    cp "$(realpath "$0")" /mnt/install-arch.sh
+    chmod +x /mnt/install-arch.sh
+
+    # Передаём переменные
+    cat > /mnt/install-vars.env << EOF
+ROOT_PASS='${ROOT_PASS}'
+USER_PASS='${USER_PASS}'
+USERNAME='${USERNAME}'
+HOSTNAME='${HOSTNAME}'
+TIMEZONE='${TIMEZONE}'
+LOCALE_LANG='${LOCALE_LANG}'
+LOCALE_RU='${LOCALE_RU}'
+TARGET_DISK='${TARGET_DISK}'
+EFI_PART='${EFI_PART}'
+ROOT_PART='${ROOT_PART}'
+DOTFILES_REPO='${DOTFILES_REPO}'
+EOF
+    chmod 600 /mnt/install-vars.env
+
+    # ─── Chroot ───
+    header "Вход в chroot..."
+    arch-chroot /mnt /bin/bash /install-arch.sh --chroot
+
+    # ─── Завершение ───
+    header "Размонтирование..."
+    umount -R /mnt
+
+    echo ""
+    ok "════════════════════════════════════════════"
+    ok " УСТАНОВКА ЗАВЕРШЕНА!"
+    ok " Перезагрузитесь: reboot"
+    ok " После входа выполните: bash ~/install-arch.sh --deploy"
+    ok "════════════════════════════════════════════"
+}
+
+# =============================================================================
+# ФАЗА 2: CHROOT (настройка системы)
+# =============================================================================
+phase_chroot() {
+    header "CACHYOS INSTALLER — ФАЗА 2: НАСТРОЙКА СИСТЕМЫ (CHROOT)"
+
+    # Загружаем переменные
+    source /install-vars.env 2>/dev/null || {
+        # Если запущен вручную — спрашиваем
+        read -rsp "Пароль root: " ROOT_PASS; echo
+        read -rsp "Пароль пользователя (${USERNAME}): " USER_PASS; echo
+    }
+
+    # ─── CachyOS репозитории ───
+    header "Подключение CachyOS репозиториев..."
 
     local has_v3=0
     if /lib/ld-linux-x86-64.so.2 --help 2>/dev/null | grep -q "x86-64-v3 (supported"; then
@@ -335,103 +404,9 @@ EOF
         rm -f /tmp/cachyos-repos.conf
     fi
 
-    # Обновляем базы на ISO с новыми репозиториями
-    info "Синхронизация баз данных pacman..."
+    info "Синхронизация баз данных pacman с CachyOS..."
     pacman -Sy --noconfirm
-
-    # Копируем конфиг pacman и зеркала CachyOS в будущую систему
-    mkdir -p /mnt/etc/pacman.d
-    cp /etc/pacman.conf /mnt/etc/pacman.conf
-    cp -r /etc/pacman.d/* /mnt/etc/pacman.d/ 2>/dev/null || true
-
-    ok "CachyOS репозитории успешно подключены и синхронизированы!"
-
-    # ─── Pacstrap (оптимизированная CachyOS база + Bore ядро) ───
-    header "Установка базовой системы CachyOS (pacstrap)..."
-
-    local pacstrap_pkgs=(
-        base base-devel
-        cachyos-keyring cachyos-mirrorlist
-        cachyos-settings
-        linux-cachyos-bore linux-cachyos-bore-headers
-        linux-firmware
-        grub efibootmgr xfsprogs
-        networkmanager sudo git curl nano vim
-    )
-    if [ "$has_v3" -eq 1 ]; then
-        pacstrap_pkgs+=(cachyos-v3-mirrorlist)
-    fi
-
-    pacstrap -K /mnt "${pacstrap_pkgs[@]}"
-
-    ok "Базовая CachyOS система с ядром Bore установлена."
-
-    # ─── fstab ───
-    header "Генерация fstab..."
-
-    genfstab -U /mnt >> /mnt/etc/fstab
-    info "Сгенерированный fstab:"
-    cat /mnt/etc/fstab
-
-    ok "fstab сгенерирован."
-
-    # ─── Копирование скрипта в chroot ───
-    cp "$(realpath "$0")" /mnt/install-arch.sh
-    chmod +x /mnt/install-arch.sh
-
-    # Передаём переменные
-    cat > /mnt/install-vars.env << EOF
-ROOT_PASS='${ROOT_PASS}'
-USER_PASS='${USER_PASS}'
-USERNAME='${USERNAME}'
-HOSTNAME='${HOSTNAME}'
-TIMEZONE='${TIMEZONE}'
-LOCALE_LANG='${LOCALE_LANG}'
-LOCALE_RU='${LOCALE_RU}'
-TARGET_DISK='${TARGET_DISK}'
-EFI_PART='${EFI_PART}'
-ROOT_PART='${ROOT_PART}'
-DOTFILES_REPO='${DOTFILES_REPO}'
-EOF
-    chmod 600 /mnt/install-vars.env
-
-    # ─── Chroot ───
-    header "Вход в chroot..."
-    arch-chroot /mnt /bin/bash /install-arch.sh --chroot
-
-    # ─── Завершение ───
-    header "Размонтирование..."
-    umount -R /mnt
-
-    echo ""
-    ok "════════════════════════════════════════════"
-    ok " УСТАНОВКА ЗАВЕРШЕНА!"
-    ok " Перезагрузитесь: reboot"
-    ok " После входа выполните: bash ~/install-arch.sh --deploy"
-    ok "════════════════════════════════════════════"
-}
-
-# =============================================================================
-# ФАЗА 2: CHROOT (настройка системы)
-# =============================================================================
-phase_chroot() {
-    header "CACHYOS INSTALLER — ФАЗА 2: НАСТРОЙКА СИСТЕМЫ (CHROOT)"
-
-    # Загружаем переменные
-    source /install-vars.env 2>/dev/null || {
-        # Если запущен вручную — спрашиваем
-        read -rsp "Пароль root: " ROOT_PASS; echo
-        read -rsp "Пароль пользователя (${USERNAME}): " USER_PASS; echo
-    }
-
-    # ─── CachyOS репозитории ───
-    header "Проверка и активация CachyOS репозиториев..."
-
-    pacman-key --init 2>/dev/null || true
-    pacman-key --populate archlinux cachyos 2>/dev/null || true
-    pacman -Sy --noconfirm
-
-    ok "CachyOS репозитории активны."
+    ok "CachyOS репозитории успешно подключены!"
 
     # ─── Системное время ───
     header "Настройка времени..."
