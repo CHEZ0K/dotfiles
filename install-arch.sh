@@ -106,8 +106,6 @@ PACMAN_PKGS=(
     # Шрифты/иконки
     noto-fonts
 
-    # Bluetooth утилиты
-    blueberry
 
     # Системные
     upower acpi lm_sensors
@@ -719,7 +717,7 @@ install_pacman_packages() {
         # Системные
         "upower acpi lm_sensors"
         # Дополнительно
-        "nodejs npm blueberry nwg-look"
+        "nodejs npm nwg-look"
         # KDE зависимости для quickshell/vibepanel
         "kconfig kcoreaddons kdeclarative kiconthemes kirigami"
     )
