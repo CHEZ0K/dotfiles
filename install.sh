@@ -165,7 +165,21 @@ phase_install() {
     info "Доступные диски:"
     lsblk -d -o NAME,SIZE,TYPE,MODEL | grep -v "loop\|rom\|airoot"
     echo ""
-    read -rp "$(echo -e "${YELLOW}Введите диск для установки (пример: nvme0n1, sda): ${NC}")" TARGET_DISK_RAW
+
+    local boot_device=""
+    if [ -d /run/archiso/bootmnt ]; then
+        boot_device=$(findmnt -n -o SOURCE /run/archiso/bootmnt 2>/dev/null | sed -E 's/[0-9]+$//;s/p[0-9]+$//;s|/dev/||' || true)
+    fi
+    if [ -n "$boot_device" ]; then
+        warn "Загрузочная флешка Live ISO: ${boot_device} (НЕ ВЫБИРАЙТЕ ЕЁ!)"
+    fi
+
+    read -rp "$(echo -e "${YELLOW}Введите целевой диск для установки (пример: nvme0n1): ${NC}")" TARGET_DISK_RAW
+    TARGET_DISK_RAW="${TARGET_DISK_RAW#/dev/}"
+
+    if [ -n "$boot_device" ] && [ "$TARGET_DISK_RAW" = "$boot_device" ]; then
+        error "Вы выбрали диск ${TARGET_DISK_RAW}, с которого сейчас загружен Live ISO! Выберите ваш внутренний SSD (например, nvme0n1)!"
+    fi
 
     TARGET_DISK="/dev/${TARGET_DISK_RAW}"
     [[ -b "$TARGET_DISK" ]] || error "Диск $TARGET_DISK не найден!"
@@ -258,22 +272,74 @@ MIRRORS
     # ─── Подключение CachyOS репозиториев НА ISO ДО PACSTRAP ───
     header "Подключение CachyOS репозиториев (x86-64-v3) на Live ISO..."
 
-    cd /tmp
-    curl -fsSL "https://mirror.cachyos.org/cachyos-repo.tar.xz" -o cachyos-repo.tar.xz
-    tar xf cachyos-repo.tar.xz
-    cd cachyos-repo
-    echo "y" | ./cachyos-repo.sh || warn "CachyOS repo script завершился с предупреждением, продолжаем..."
-    cd /tmp
+    local cachy_url="https://mirror.cachyos.org/repo/x86_64/cachyos"
+    mkdir -p /tmp/cachyos-bootstrap
+
+    info "Скачивание связки ключей и зеркал CachyOS..."
+    curl -fsSL "${cachy_url}/cachyos-keyring-20240331-1-any.pkg.tar.zst" -o /tmp/cachyos-bootstrap/keyring.pkg.tar.zst
+    curl -fsSL "${cachy_url}/cachyos-mirrorlist-27-1-any.pkg.tar.zst" -o /tmp/cachyos-bootstrap/mirrorlist.pkg.tar.zst
+    curl -fsSL "${cachy_url}/cachyos-v3-mirrorlist-27-1-any.pkg.tar.zst" -o /tmp/cachyos-bootstrap/v3-mirrorlist.pkg.tar.zst
+
+    info "Импорт доверенных ключей CachyOS..."
+    tar -xf /tmp/cachyos-bootstrap/keyring.pkg.tar.zst -C / usr/share/pacman/keyrings/ 2>/dev/null || true
+    pacman-key --init 2>/dev/null || true
+    pacman-key --populate archlinux cachyos 2>/dev/null || {
+        pacman-key --add /usr/share/pacman/keyrings/cachyos.gpg 2>/dev/null || true
+        pacman-key --lsign-key F3B607488DB35A47 2>/dev/null || true
+    }
+
+    info "Распаковка зеркал CachyOS в /etc/pacman.d/..."
+    tar -xf /tmp/cachyos-bootstrap/mirrorlist.pkg.tar.zst -C / etc/pacman.d/ 2>/dev/null || true
+    tar -xf /tmp/cachyos-bootstrap/v3-mirrorlist.pkg.tar.zst -C / etc/pacman.d/ 2>/dev/null || true
+
+    local has_v3=0
+    if /lib/ld-linux-x86-64.so.2 --help 2>/dev/null | grep -q "x86-64-v3 (supported"; then
+        has_v3=1
+        info "Процессор поддерживает набор инструкций x86-64-v3!"
+    fi
+
+    if ! grep -q "\[cachyos\]" /etc/pacman.conf; then
+        info "Добавление репозиториев CachyOS в /etc/pacman.conf..."
+        cat << 'EOF' > /tmp/cachyos-repos.conf
+[cachyos-v3]
+Include = /etc/pacman.d/cachyos-v3-mirrorlist
+
+[cachyos-core-v3]
+Include = /etc/pacman.d/cachyos-v3-mirrorlist
+
+[cachyos-extra-v3]
+Include = /etc/pacman.d/cachyos-v3-mirrorlist
+
+[cachyos]
+Include = /etc/pacman.d/cachyos-mirrorlist
+
+EOF
+        if [ "$has_v3" -eq 0 ]; then
+            sed -i '/cachyos.*v3/d' /tmp/cachyos-repos.conf
+        fi
+
+        FIRST_REPO_LINE=$(grep -n "^\[" /etc/pacman.conf | grep -v "\[options\]" | head -n 1 | cut -d: -f1)
+        if [ -n "$FIRST_REPO_LINE" ]; then
+            head -n "$((FIRST_REPO_LINE - 1))" /etc/pacman.conf > /tmp/pacman.conf.new
+            cat /tmp/cachyos-repos.conf >> /tmp/pacman.conf.new
+            tail -n "+${FIRST_REPO_LINE}" /etc/pacman.conf >> /tmp/pacman.conf.new
+            mv /tmp/pacman.conf.new /etc/pacman.conf
+        else
+            cat /tmp/cachyos-repos.conf >> /etc/pacman.conf
+        fi
+        rm -f /tmp/cachyos-repos.conf
+    fi
 
     # Обновляем базы на ISO с новыми репозиториями
-    pacman -Syy --noconfirm
+    info "Синхронизация баз данных pacman..."
+    pacman -Sy --noconfirm
 
     # Копируем конфиг pacman и зеркала CachyOS в будущую систему
     mkdir -p /mnt/etc/pacman.d
     cp /etc/pacman.conf /mnt/etc/pacman.conf
     cp -r /etc/pacman.d/* /mnt/etc/pacman.d/ 2>/dev/null || true
 
-    ok "CachyOS репозитории подключены! Пакеты будут скачиваться оптимизированными."
+    ok "CachyOS репозитории успешно подключены и синхронизированы!"
 
     # ─── Pacstrap (оптимизированная CachyOS база + Bore ядро) ───
     header "Установка базовой системы CachyOS (pacstrap)..."
@@ -348,23 +414,13 @@ phase_chroot() {
     }
 
     # ─── CachyOS репозитории ───
-    header "Добавление CachyOS репозиториев..."
+    header "Проверка и активация CachyOS репозиториев..."
 
-    # Устанавливаем необходимые инструменты
-    pacman -Sy --noconfirm curl wget
+    pacman-key --init 2>/dev/null || true
+    pacman-key --populate archlinux cachyos 2>/dev/null || true
+    pacman -Sy --noconfirm
 
-    # Скачиваем установщик CachyOS репо
-    cd /tmp
-    curl -fsSL "https://mirror.cachyos.org/cachyos-repo.tar.xz" -o cachyos-repo.tar.xz
-    tar xf cachyos-repo.tar.xz
-    cd cachyos-repo
-    echo "y" | ./cachyos-repo.sh || warn "CachyOS repo script завершился с ошибкой, продолжаем..."
-    cd /tmp
-
-    # Обновляем базу данных
-    pacman -Syy --noconfirm
-
-    ok "CachyOS репозитории добавлены."
+    ok "CachyOS репозитории активны."
 
     # ─── Системное время ───
     header "Настройка времени..."
