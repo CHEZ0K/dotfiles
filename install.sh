@@ -521,13 +521,13 @@ EOF
     # ─── Службы ───
     header "Включение системных служб..."
 
-    systemctl enable NetworkManager
-    systemctl enable bluetooth
-    systemctl enable sddm
-    systemctl enable openssh
-    systemctl enable power-profiles-daemon
-    systemctl enable udisks2
-    systemctl enable scx 2>/dev/null || warn "scx не найден, пропускаем"
+    systemctl enable NetworkManager 2>/dev/null || true
+    systemctl enable bluetooth 2>/dev/null || true
+    systemctl enable sddm 2>/dev/null || true
+    systemctl enable sshd 2>/dev/null || systemctl enable openssh 2>/dev/null || true
+    systemctl enable power-profiles-daemon 2>/dev/null || true
+    systemctl enable udisks2 2>/dev/null || true
+    systemctl enable scx 2>/dev/null || true
 
     # Polkit правило для управления Wi-Fi без пароля root
     mkdir -p /etc/polkit-1/rules.d
@@ -691,8 +691,9 @@ detect_and_install_gpu() {
 }
 
 install_pacman_packages() {
-    # Пакеты сгруппированы — если один упадёт, остальные установятся
     local groups=(
+        # Сеть, Bluetooth и SSH
+        "bluez bluez-utils openssh"
         # Wayland стек
         "wayland niri sddm xwayland-satellite wl-clipboard cliphist"
         # Звук
