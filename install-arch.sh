@@ -68,8 +68,8 @@ PACMAN_PKGS=(
     # Звук
     pipewire pipewire-pulse wireplumber pavucontrol
 
-    # GPU (AMD)
-    mesa vulkan-radeon libva-mesa-driver mesa-vdpau vulkan-icd-loader
+    # GPU (базовый стек, конкретные драйверы ставятся в detect_and_install_gpu)
+    mesa vulkan-icd-loader
 
     # Утилиты и инструменты
     btop htop neofetch aria2 playerctl
@@ -270,7 +270,15 @@ MIRRORS
     ok "Mirrorlist настроен."
 
     # ─── Подключение CachyOS репозиториев НА ISO ДО PACSTRAP ───
-    header "Подключение CachyOS репозиториев (x86-64-v3) на Live ISO..."
+    header "Подключение CachyOS репозиториев на Live ISO..."
+
+    local has_v3=0
+    if /lib/ld-linux-x86-64.so.2 --help 2>/dev/null | grep -q "x86-64-v3 (supported"; then
+        has_v3=1
+        info "Процессор поддерживает оптимизированный набор инструкций x86-64-v3!"
+    else
+        info "Процессор (Pentium / x86-64 generic): используется стандартная стабильная ветка x86-64 без v3."
+    fi
 
     local cachy_url="https://mirror.cachyos.org/repo/x86_64/cachyos"
     mkdir -p /tmp/cachyos-bootstrap
@@ -278,7 +286,11 @@ MIRRORS
     info "Скачивание связки ключей и зеркал CachyOS..."
     curl -fsSL "${cachy_url}/cachyos-keyring-20240331-1-any.pkg.tar.zst" -o /tmp/cachyos-bootstrap/keyring.pkg.tar.zst
     curl -fsSL "${cachy_url}/cachyos-mirrorlist-27-1-any.pkg.tar.zst" -o /tmp/cachyos-bootstrap/mirrorlist.pkg.tar.zst
-    curl -fsSL "${cachy_url}/cachyos-v3-mirrorlist-27-1-any.pkg.tar.zst" -o /tmp/cachyos-bootstrap/v3-mirrorlist.pkg.tar.zst
+
+    if [ "$has_v3" -eq 1 ]; then
+        curl -fsSL "${cachy_url}/cachyos-v3-mirrorlist-27-1-any.pkg.tar.zst" -o /tmp/cachyos-bootstrap/v3-mirrorlist.pkg.tar.zst
+        tar -xf /tmp/cachyos-bootstrap/v3-mirrorlist.pkg.tar.zst -C / etc/pacman.d/ 2>/dev/null || true
+    fi
 
     info "Импорт доверенных ключей CachyOS..."
     tar -xf /tmp/cachyos-bootstrap/keyring.pkg.tar.zst -C / usr/share/pacman/keyrings/ 2>/dev/null || true
@@ -290,13 +302,6 @@ MIRRORS
 
     info "Распаковка зеркал CachyOS в /etc/pacman.d/..."
     tar -xf /tmp/cachyos-bootstrap/mirrorlist.pkg.tar.zst -C / etc/pacman.d/ 2>/dev/null || true
-    tar -xf /tmp/cachyos-bootstrap/v3-mirrorlist.pkg.tar.zst -C / etc/pacman.d/ 2>/dev/null || true
-
-    local has_v3=0
-    if /lib/ld-linux-x86-64.so.2 --help 2>/dev/null | grep -q "x86-64-v3 (supported"; then
-        has_v3=1
-        info "Процессор поддерживает набор инструкций x86-64-v3!"
-    fi
 
     if ! grep -q "\[cachyos\]" /etc/pacman.conf; then
         info "Добавление репозиториев CachyOS в /etc/pacman.conf..."
@@ -344,14 +349,20 @@ EOF
     # ─── Pacstrap (оптимизированная CachyOS база + Bore ядро) ───
     header "Установка базовой системы CachyOS (pacstrap)..."
 
-    pacstrap -K /mnt \
-        base base-devel \
-        cachyos-keyring cachyos-mirrorlist cachyos-v3-mirrorlist \
-        cachyos-settings \
-        linux-cachyos-bore linux-cachyos-bore-headers \
-        linux-firmware \
-        grub efibootmgr xfsprogs \
+    local pacstrap_pkgs=(
+        base base-devel
+        cachyos-keyring cachyos-mirrorlist
+        cachyos-settings
+        linux-cachyos-bore linux-cachyos-bore-headers
+        linux-firmware
+        grub efibootmgr xfsprogs
         networkmanager sudo git curl nano vim
+    )
+    if [ "$has_v3" -eq 1 ]; then
+        pacstrap_pkgs+=(cachyos-v3-mirrorlist)
+    fi
+
+    pacstrap -K /mnt "${pacstrap_pkgs[@]}"
 
     ok "Базовая CachyOS система с ядром Bore установлена."
 
@@ -649,38 +660,57 @@ EOF
 # =============================================================================
 
 detect_and_install_gpu() {
+    header "Определение видеокарты (GPU)..."
     local vga
     vga=$(lspci 2>/dev/null | grep -iE "VGA|3D|Display" || true)
 
-    info "Определено GPU: $vga"
+    info "Определено в lspci:"
+    echo "$vga"
 
-    if echo "$vga" | grep -qi "AMD\|ATI"; then
-        info "AMD GPU: устанавливаем mesa, vulkan-radeon, libva-mesa-driver..."
-        pacman -S --noconfirm --needed \
-            mesa vulkan-radeon libva-mesa-driver mesa-vdpau \
-            vulkan-icd-loader lib32-mesa lib32-vulkan-radeon \
-            xf86-video-amdgpu
-        ok "AMD GPU драйверы установлены."
+    local is_intel=0
+    local is_amd=0
+    local is_nvidia=0
 
-    elif echo "$vga" | grep -qi "Intel"; then
-        info "Intel GPU: устанавливаем intel-media-driver, vulkan-intel..."
+    echo "$vga" | grep -qiE "Intel|8086" && is_intel=1 || true
+    echo "$vga" | grep -qiE "AMD|ATI|Radeon" && is_amd=1 || true
+    echo "$vga" | grep -qiE "NVIDIA" && is_nvidia=1 || true
+
+    # Intel GPU (включая встроенную графику Pentium 2020M / Ivy Bridge / Core i3/i5/i7)
+    if [ "$is_intel" -eq 1 ]; then
+        info "Intel GPU: установка mesa, libva-intel-driver, vulkan-intel..."
         pacman -S --noconfirm --needed \
-            mesa vulkan-intel intel-media-driver \
-            vulkan-icd-loader lib32-mesa lib32-vulkan-intel \
-            xf86-video-intel
+            mesa libva-intel-driver vulkan-intel vulkan-icd-loader \
+            xf86-video-intel 2>/dev/null || true
         ok "Intel GPU драйверы установлены."
+    fi
 
-    elif echo "$vga" | grep -qi "NVIDIA"; then
-        info "NVIDIA GPU: устанавливаем nvidia драйверы..."
+    # AMD GPU
+    if [ "$is_amd" -eq 1 ]; then
+        info "AMD GPU: установка mesa, vulkan-radeon, libva-mesa-driver..."
         pacman -S --noconfirm --needed \
-            nvidia nvidia-utils lib32-nvidia-utils \
-            vulkan-icd-loader
-        # Для Wayland/Niri
-        sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 nvidia-drm.modeset=1"/' /etc/default/grub
-        ok "NVIDIA GPU драйверы установлены."
+            mesa vulkan-radeon libva-mesa-driver mesa-vdpau vulkan-icd-loader \
+            xf86-video-amdgpu 2>/dev/null || true
+        ok "AMD GPU драйверы установлены."
+    fi
 
-    else
-        warn "GPU не определён, устанавливаем mesa (универсально)..."
+    # NVIDIA GPU
+    if [ "$is_nvidia" -eq 1 ]; then
+        # Если это старая система (Pentium / Ivy Bridge / без v3) или гибридная графика (Optimus):
+        # современный проприетарный пакет 'nvidia' из Arch НЕ поддерживает видеокарты старше GTX 16xx / RTX.
+        # Для них используется стабильный открытый драйвер nouveau из ядра Linux + mesa.
+        if [ "$is_intel" -eq 1 ] || [ "${has_v3:-0}" -eq 0 ]; then
+            info "Старый чип NVIDIA / гибридный Optimus: используется открытый nouveau из ядра + mesa."
+            pacman -S --noconfirm --needed mesa vulkan-icd-loader 2>/dev/null || true
+        else
+            info "NVIDIA GPU (Turing / RTX+): установка проприетарного драйвера nvidia..."
+            pacman -S --noconfirm --needed nvidia nvidia-utils vulkan-icd-loader 2>/dev/null || true
+            sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 nvidia-drm.modeset=1"/' /etc/default/grub 2>/dev/null || true
+        fi
+        ok "NVIDIA драйверы настроены."
+    fi
+
+    if [ "$is_intel" -eq 0 ] && [ "$is_amd" -eq 0 ] && [ "$is_nvidia" -eq 0 ]; then
+        warn "GPU не определён точно, устанавливаем универсальный стек mesa..."
         pacman -S --noconfirm --needed mesa vulkan-icd-loader
     fi
 }
