@@ -47,6 +47,7 @@ window,
 .widget label,
 .clock label,
 .cpu label,
+.custom-headset label,
 .battery label {
   padding-top: 1px;
   padding-bottom: 1px;

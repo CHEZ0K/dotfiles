@@ -484,20 +484,31 @@ EOF
     systemctl enable sddm
     systemctl enable openssh
     systemctl enable power-profiles-daemon
+    systemctl enable udisks2
     systemctl enable scx 2>/dev/null || warn "scx не найден, пропускаем"
 
     # Polkit правило для управления Wi-Fi без пароля root
     mkdir -p /etc/polkit-1/rules.d
     cat > /etc/polkit-1/rules.d/50-networkmanager.rules << POLKIT_EOF
-/* Разрешить пользователю ${USERNAME} управление NetworkManager без пароля root */
+/* Разрешить пользователю \${USERNAME} управление NetworkManager без пароля root */
 polkit.addRule(function(action, subject) {
-    if (action.id.indexOf("org.freedesktop.NetworkManager.") === 0 && subject.user === "${USERNAME}") {
+    if (action.id.indexOf("org.freedesktop.NetworkManager.") === 0 && subject.user === "\${USERNAME}") {
         return polkit.Result.YES;
     }
 });
 POLKIT_EOF
 
-    ok "Службы включены, Polkit правило для Wi-Fi создано."
+    # Polkit правило для автомонтирования флешек без пароля root
+    cat > /etc/polkit-1/rules.d/50-udisks2.rules << POLKIT_EOF
+/* Разрешить пользователю \${USERNAME} монтировать и извлекать любые накопители без пароля */
+polkit.addRule(function(action, subject) {
+    if ((action.id.indexOf("org.freedesktop.udisks2.") === 0) && subject.user === "\${USERNAME}") {
+        return polkit.Result.YES;
+    }
+});
+POLKIT_EOF
+
+    ok "Службы включены, Polkit правила для Wi-Fi и автомонтирования флешек созданы."
 
     # ─── SDDM настройка ───
     header "Настройка SDDM (Wayland + тема silent + курсор Furina)..."
@@ -628,8 +639,8 @@ install_pacman_packages() {
         "btop htop neofetch aria2 playerctl brightnessctl power-profiles-daemon libnotify matugen"
         # Терминал и шрифты
         "foot ttf-jetbrains-mono-nerd ttf-nerd-fonts-symbols-mono noto-fonts-emoji noto-fonts"
-        # Файловый менеджер
-        "nemo"
+        # Файловый менеджер и автомонтирование флешек (NTFS, FAT, exFAT)
+        "nemo udisks2 udiskie ntfs-3g dosfstools exfatprogs"
         # Браузер
         "firefox"
         # Медиа

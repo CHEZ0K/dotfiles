@@ -25,6 +25,7 @@ center = [
 
 right = [
   "memory",
+  "custom-headset",
   "cpu",
   "quick_settings",
   "tray",
@@ -32,6 +33,12 @@ right = [
 ]
 
 popover_background_opacity = 0.45
+
+[widgets.custom-headset]
+exec = "/home/chezok/.local/bin/headset-battery.py"
+template = "{output}"
+interval = 5
+tooltip = "Headset Battery"
 
 [widgets.notifications]
 toast_position = "top-right"

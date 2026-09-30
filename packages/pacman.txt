@@ -84,3 +84,8 @@ xfsprogs 7.1.1-1.1
 xwayland-satellite 0.8.2-1
 yay 13.0.1-1
 zen-browser-bin 1.22.1b-1
+udisks2
+udiskie
+ntfs-3g
+dosfstools
+exfatprogs
