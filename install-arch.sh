@@ -121,7 +121,7 @@ AUR_PKGS=(
     zen-browser-bin
 
     # Мессенджер
-    ayugram-desktop
+    ayugram-desktop-bin
 
     # Панель и уведомления
     vibepanel-git
@@ -739,7 +739,7 @@ install_aur_packages() {
 
     local aur_groups=(
         # Браузер и мессенджер
-        "zen-browser-bin ayugram-desktop"
+        "zen-browser-bin ayugram-desktop-bin"
         # Панель и уведомления
         "vibepanel-git swaync"
         # Обои
