@@ -847,7 +847,7 @@ install_pacman_packages() {
         "zen-browser-bin ayugram-desktop firefox mpv cava"
 
         # Системные мониторы, CLI утилиты и библиотеки (R1)
-        "btop htop nvtop cmatrix neofetch genact aria2 playerctl brightnessctl libnotify jq tty-clock nodejs npm lua-luv"
+        "btop htop nvtop cmatrix fastfetch genact aria2 playerctl brightnessctl libnotify jq tty-clock nodejs npm lua-luv"
 
         # Qt6 и библиотеки KDE Frameworks для quickshell/vibepanel
         "qt6-5compat qt6-multimedia qt6-positioning qt6-sensors qt6-virtualkeyboard qt6-declarative quickshell"
@@ -870,8 +870,8 @@ install_aur_packages() {
 
     # Vibepanel: используем быстрый предсобранный бинарник vibepanel-bin с фоллбеком на vibepanel-git
     info "AUR: установка Vibepanel..."
-    su - "${USERNAME:-chezok}" -c "yay -S --noconfirm --needed --answerclean None --answerdiff None --answeredit None --answermenu None vibepanel-bin" 2>/dev/null \
-        || su - "${USERNAME:-chezok}" -c "yay -S --noconfirm --needed --answerclean None --answerdiff None --answeredit None --answermenu None vibepanel-git" \
+    su - "${USERNAME:-chezok}" -c "yay -S --noconfirm --needed --answerclean None --answerdiff None --answeredit None --answerupgrade None vibepanel-bin" 2>/dev/null \
+        || su - "${USERNAME:-chezok}" -c "yay -S --noconfirm --needed --answerclean None --answerdiff None --answeredit None --answerupgrade None vibepanel-git" \
         || warn "vibepanel не удалось установить из AUR"
 
     local aur_groups=(
@@ -892,7 +892,7 @@ install_aur_packages() {
         info "AUR: устанавливаем $group"
         ensure_resolv_conf
         # shellcheck disable=SC2086
-        su - "${USERNAME:-chezok}" -c "yay -S --noconfirm --needed --answerclean None --answerdiff None --answeredit None --answermenu None $group" \
+        su - "${USERNAME:-chezok}" -c "yay -S --noconfirm --needed --answerclean None --answerdiff None --answeredit None --answerupgrade None $group" \
             || warn "Некоторые AUR пакеты не установлены: $group"
     done
 }
