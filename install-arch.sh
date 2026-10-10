@@ -511,6 +511,7 @@ EOF
         mkinitcpio \
         linux-cachyos-bore linux-cachyos-bore-headers \
         cachyos-settings scx-scheds \
+        ananicy-cpp cachyos-ananicy-rules zram-generator \
         linux-firmware intel-ucode || warn "Некоторые CachyOS пакеты не найдены (проверьте репо)"
 
     # Настройка hooks mkinitcpio (поддержка XFS и microcode)
@@ -606,6 +607,7 @@ EOF
     systemctl enable power-profiles-daemon 2>/dev/null || true
     systemctl enable udisks2 2>/dev/null || true
     systemctl enable scx 2>/dev/null || true
+    systemctl enable ananicy-cpp 2>/dev/null || true
 
     mkdir -p /etc/modules-load.d
     echo -e "bluetooth\nhci_vhci" > /etc/modules-load.d/bluetooth.conf
