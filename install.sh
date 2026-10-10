@@ -1027,8 +1027,9 @@ deploy_dotfiles() {
     # ─── Vibepanel ───
     safe_copy "$df/vibepanel" "$cfg/vibepanel"
     if lspci 2>/dev/null | grep -qi "Ivy Bridge\|Sandy Bridge\|Haswell"; then
-        info "Legacy Intel GPU: отключаем blur в Vibepanel для предотвращения краша Wayland (прозрачность сохранена)..."
+        info "Legacy Intel GPU: отключаем blur в Vibepanel для предотвращения краша Wayland и выставляем читаемое затемнение 0.35..."
         sed -i 's/blur = true/blur = false/' "$cfg/vibepanel/config.toml" 2>/dev/null || true
+        sed -i 's/background_opacity = 0.0/background_opacity = 0.35/' "$cfg/vibepanel/config.toml" 2>/dev/null || true
     fi
 
     # ─── Waybar ───
@@ -1288,8 +1289,11 @@ deploy_grub_theme() {
         sed -i '/^terminal-/d' "$dst/theme.txt" 2>/dev/null || true
         sed -i 's/Terminus/JetBrains Mono/g' "$dst/theme.txt" 2>/dev/null || true
 
-        # Настройка /etc/default/grub
-        cat > /etc/default/grub << 'EOF'
+        # Адаптивный fallback для старых GPU (Ivy Bridge/Sandy Bridge/Haswell), где UEFI GOP дает черный экран в gfxterm
+        if lspci 2>/dev/null | grep -qi "Ivy Bridge\|Sandy Bridge\|Haswell"; then
+            warn "Обнаружен Legacy Intel GPU: на этой платформе UEFI GOP часто дает черный экран в графическом GRUB."
+            info "Настройка надежного текстового режима GRUB (console) для гарантированного отображения меню..."
+            cat > /etc/default/grub << 'EOF'
 GRUB_DEFAULT=0
 GRUB_TIMEOUT=5
 GRUB_DISTRIBUTOR="CachyOS"
@@ -1297,14 +1301,31 @@ GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3"
 GRUB_CMDLINE_LINUX=""
 GRUB_PRELOAD_MODULES="part_gpt part_msdos"
 GRUB_TIMEOUT_STYLE=menu
-GRUB_GFXMODE=1920x1080,1366x768,1024x768,auto
+GRUB_TERMINAL_INPUT="console"
+GRUB_TERMINAL_OUTPUT="console"
+#GRUB_THEME="/boot/grub/themes/asuka/theme.txt"
+GRUB_GFXPAYLOAD_LINUX=keep
+GRUB_DISABLE_RECOVERY=true
+EOF
+        else
+            # По базе как у пользователя (Full HD Asuka theme)
+            cat > /etc/default/grub << 'EOF'
+GRUB_DEFAULT=0
+GRUB_TIMEOUT=5
+GRUB_DISTRIBUTOR="CachyOS"
+GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3"
+GRUB_CMDLINE_LINUX=""
+GRUB_PRELOAD_MODULES="part_gpt part_msdos"
+GRUB_TIMEOUT_STYLE=menu
+GRUB_GFXMODE=1920x1080,auto
 GRUB_GFXPAYLOAD_LINUX=keep
 GRUB_DISABLE_RECOVERY=true
 GRUB_THEME="/boot/grub/themes/asuka/theme.txt"
 EOF
+        fi
 
         grub-mkconfig -o /boot/grub/grub.cfg
-        ok "GRUB тема Asuka установлена и активирована."
+        ok "GRUB настроен и активирован."
     fi
 }
 
