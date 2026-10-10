@@ -1284,20 +1284,20 @@ deploy_grub_theme() {
         mkdir -p "$dst"
         cp -r "$src/." "$dst/"
 
-        # Исправление отсутствующих шрифтов и рамок в теме Asuka
-        sed -i 's/^terminal-box:/#terminal-box:/' "$dst/theme.txt" 2>/dev/null || true
+        # Удаление сломанных terminal-* директив, создающих черный экран на весь экран в GRUB
+        sed -i '/^terminal-/d' "$dst/theme.txt" 2>/dev/null || true
         sed -i 's/Terminus/JetBrains Mono/g' "$dst/theme.txt" 2>/dev/null || true
 
         # Настройка /etc/default/grub
         cat > /etc/default/grub << 'EOF'
 GRUB_DEFAULT=0
 GRUB_TIMEOUT=5
-GRUB_DISTRIBUTOR="Arch"
+GRUB_DISTRIBUTOR="CachyOS"
 GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3"
 GRUB_CMDLINE_LINUX=""
 GRUB_PRELOAD_MODULES="part_gpt part_msdos"
 GRUB_TIMEOUT_STYLE=menu
-GRUB_GFXMODE=1024x768,auto
+GRUB_GFXMODE=1920x1080,1366x768,1024x768,auto
 GRUB_GFXPAYLOAD_LINUX=keep
 GRUB_DISABLE_RECOVERY=true
 GRUB_THEME="/boot/grub/themes/asuka/theme.txt"

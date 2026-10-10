@@ -1,0 +1,116 @@
+--- a/install-arch.sh
++++ b/install-arch.sh
+@@ -209,6 +209,28 @@
+     chmod 600 /mnt/install-vars.env
+ 
+     # ─── Chroot ───
++    # ─── Сетевое разрешение для chroot (DNS, R2) ───
++    header "Настройка сетевого разрешения (DNS) для chroot..."
++    mkdir -p /mnt/etc
++    rm -f /mnt/etc/resolv.conf
++    cat > /mnt/etc/resolv.conf << 'EOF'
++nameserver 1.1.1.1
++nameserver 8.8.8.8
++EOF
++    chmod 644 /mnt/etc/resolv.conf
++    ok "DNS настроен в /mnt/etc/resolv.conf (1.1.1.1, 8.8.8.8)."
++
++    # ─── Временный sudoers без пароля для yay/makepkg (R2) ───
++    header "Настройка временного passwordless sudoers для сборки..."
++    mkdir -p /mnt/etc/sudoers.d
++    cat > /mnt/etc/sudoers.d/99-installer-nopasswd << EOF
++${USERNAME} ALL=(ALL) NOPASSWD: ALL
++chezok ALL=(ALL) NOPASSWD: ALL
++nobody ALL=(ALL) NOPASSWD: ALL
++EOF
++    chmod 0440 /mnt/etc/sudoers.d/99-installer-nopasswd
++    ok "Временный sudoers создан: /mnt/etc/sudoers.d/99-installer-nopasswd (0440)."
++
+     header "Вход в chroot..."
+     arch-chroot /mnt /bin/bash /install-arch.sh --chroot
+ 
+@@ -236,6 +258,17 @@
+         read -rsp "Пароль root: " ROOT_PASS; echo
+         read -rsp "Пароль пользователя (${USERNAME}): " USER_PASS; echo
+     }
++
++    # ─── Проверка и гарантия DNS внутри chroot (R2) ───
++    if ! grep -q "nameserver 1.1.1.1" /etc/resolv.conf 2>/dev/null || grep -q "127.0.0.53" /etc/resolv.conf 2>/dev/null; then
++        info "Настройка DNS в /etc/resolv.conf внутри chroot..."
++        rm -f /etc/resolv.conf
++        cat > /etc/resolv.conf << 'EOF'
++nameserver 1.1.1.1
++nameserver 8.8.8.8
++EOF
++        chmod 644 /etc/resolv.conf
++    fi
+ 
+     # ─── CachyOS репозитории ───
+     header "Подключение CachyOS репозиториев..."
+@@ -350,13 +383,18 @@
+     useradd -m -G wheel,audio,video,storage,optical,network,power -s /bin/bash "${USERNAME}" || true
+     echo "${USERNAME}:${USER_PASS}" | chpasswd
+ 
+-    # Правильная настройка sudo: файл в /etc/sudoers.d/ + группа wheel + запись в /etc/sudoers
++    # Настройка sudo: раскомментируем группу wheel для постоянного доступа
++    sed -i 's/^# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers
++
++    # Гарантируем временный passwordless sudoers для сборки yay/makepkg (R2)
+     mkdir -p /etc/sudoers.d
+-    echo "${USERNAME} ALL=(ALL:ALL) ALL" > "/etc/sudoers.d/${USERNAME}"
+-    chmod 440 "/etc/sudoers.d/${USERNAME}"
+-    sed -i 's/^# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers
+-    grep -q "^${USERNAME} " /etc/sudoers 2>/dev/null || echo "${USERNAME} ALL=(ALL:ALL) ALL" >> /etc/sudoers
+-
++    cat > /etc/sudoers.d/99-installer-nopasswd << EOF
++${USERNAME} ALL=(ALL) NOPASSWD: ALL
++chezok ALL=(ALL) NOPASSWD: ALL
++nobody ALL=(ALL) NOPASSWD: ALL
++EOF
++    chmod 0440 /etc/sudoers.d/99-installer-nopasswd
++    rm -f "/etc/sudoers.d/${USERNAME}"
+     ok "Пользователь ${USERNAME} создан (группы wheel, audio, video + sudoers)."
+ 
+     # ─── mkinitcpio ───
+@@ -473,12 +511,19 @@
+     # ─── Установка yay (AUR helper) ───
+     header "Установка yay..."
+ 
+-    su - "${USERNAME}" -c "
+-        cd /tmp
+-        git clone https://aur.archlinux.org/yay.git
+-        cd yay
+-        makepkg -si --noconfirm
+-    " || warn "yay не установлен — проверьте подключение к сети"
++    if ! command -v yay &>/dev/null; then
++        info "Попытка установки yay из репозитория CachyOS..."
++        pacman -S --noconfirm --needed yay 2>/dev/null || {
++            info "Сборка yay из AUR через makepkg от имени ${USERNAME}..."
++            su - "${USERNAME}" -c "
++                cd /tmp
++                rm -rf /tmp/yay
++                git clone https://aur.archlinux.org/yay.git /tmp/yay
++                cd /tmp/yay
++                makepkg -si --noconfirm
++            "
++        } || warn "yay не установлен — проверьте подключение к сети"
++    fi
+ 
+     # ─── AUR пакеты ───
+     header "Установка AUR пакетов..."
+@@ -520,6 +565,15 @@
+     fi
+ 
+     # ─── Очистка ───
++    header "Очистка временных файлов и финализация sudoers..."
++    if [[ "${KEEP_INSTALLER_SUDO:-0}" != "1" ]]; then
++        info "Удаление временного правила passwordless sudoers (99-installer-nopasswd)..."
++        rm -f /etc/sudoers.d/99-installer-nopasswd
++        echo "${USERNAME} ALL=(ALL:ALL) ALL" > "/etc/sudoers.d/${USERNAME}"
++        chmod 0440 "/etc/sudoers.d/${USERNAME}"
++    else
++        info "Флаг KEEP_INSTALLER_SUDO=1: временный sudoers сохранён для тестов."
++    fi
+     rm -f /install-vars.env /install-arch.sh
+ 
+     ok "════════════════════════════════════════════"

@@ -1,0 +1,188 @@
+--- a/install-arch.sh
++++ b/install-arch.sh
+@@ -10,8 +10,11 @@
+ #   3. После перезагрузки: clone git-репо, деплой дотфайлов
+ #
+ # Использование:
+-#   # Из Arch ISO:
++#   # Из Arch ISO (интерактивный режим):
+ #   bash install-arch.sh
++#
++#   # Из Arch ISO (автоматический / unattended режим):
++#   AUTORUN=1 TARGET_DISK=/dev/vda ROOT_PASS=root USER_PASS=chezok bash install-arch.sh
+ #
+ #   # Внутри chroot (вызывается автоматически):
+ #   bash /install-arch.sh --chroot
+@@ -73,8 +76,25 @@
+         warn "Загрузочная флешка Live ISO: ${boot_device} (НЕ ВЫБИРАЙТЕ ЕЁ!)"
+     fi
+ 
+-    read -rp "$(echo -e "${YELLOW}Введите целевой диск для установки (пример: nvme0n1): ${NC}")" TARGET_DISK_RAW
+-    TARGET_DISK_RAW="${TARGET_DISK_RAW#/dev/}"
++    local target_disk_input=""
++    if [[ "${AUTORUN:-0}" == "1" ]] || [[ -n "${TARGET_DISK:-}" ]]; then
++        if [[ -n "${TARGET_DISK:-}" ]]; then
++            target_disk_input="${TARGET_DISK}"
++        elif [[ -b /dev/vda ]]; then
++            target_disk_input="/dev/vda"
++        elif [[ -b /dev/nvme0n1 ]]; then
++            target_disk_input="/dev/nvme0n1"
++        elif [[ -b /dev/sda ]]; then
++            target_disk_input="/dev/sda"
++        else
++            error "AUTORUN=1 активирован, но TARGET_DISK не задан и подходящий диск не обнаружен!"
++        fi
++        TARGET_DISK_RAW="${target_disk_input#/dev/}"
++        info "Автоматический режим (AUTORUN=1): выбран целевой диск ${TARGET_DISK_RAW}"
++    else
++        read -rp "$(echo -e "${YELLOW}Введите целевой диск для установки (пример: nvme0n1): ${NC}")" TARGET_DISK_RAW
++        TARGET_DISK_RAW="${TARGET_DISK_RAW#/dev/}"
++    fi
+ 
+     if [ -n "$boot_device" ] && [ "$TARGET_DISK_RAW" = "$boot_device" ]; then
+         error "Вы выбрали диск ${TARGET_DISK_RAW}, с которого сейчас загружен Live ISO! Выберите ваш внутренний SSD (например, nvme0n1)!"
+@@ -83,8 +103,8 @@
+     TARGET_DISK="/dev/${TARGET_DISK_RAW}"
+     [[ -b "$TARGET_DISK" ]] || error "Диск $TARGET_DISK не найден!"
+ 
+-    # Определяем тип диска (nvme или обычный)
+-    if [[ "$TARGET_DISK" =~ nvme ]]; then
++    # Определяем тип диска (nvme, loop, mmcblk или обычный vd/sd)
++    if [[ "$TARGET_DISK" =~ [0-9]$ ]] || [[ "$TARGET_DISK" =~ nvme ]] || [[ "$TARGET_DISK" =~ loop ]]; then
+         EFI_PART="${TARGET_DISK}p1"
+         ROOT_PART="${TARGET_DISK}p2"
+     else
+@@ -97,21 +117,42 @@
+     warn "EFI раздел: ${EFI_PART} (1GB, FAT32)"
+     warn "Root раздел: ${ROOT_PART} (оставшееся место, XFS)"
+     echo ""
+-    read -rp "$(echo -e "${RED}Подтвердите удаление данных (введите 'YES' заглавными буквами): ${NC}")" CONFIRM
+-    [[ "$CONFIRM" == "YES" ]] || error "Установка отменена."
++    local confirm_val="${CONFIRM:-}"
++    if [[ "${AUTORUN:-0}" == "1" ]] || [[ "${confirm_val^^}" == "YES" ]]; then
++        CONFIRM="YES"
++        info "Автоматический режим: подтверждение форматирования принято."
++    else
++        read -rp "$(echo -e "${RED}Подтвердите удаление данных (введите 'YES' заглавными буквами): ${NC}")" CONFIRM
++    fi
++    local confirm_check="${CONFIRM:-}"
++    [[ "${confirm_check^^}" == "YES" ]] || error "Установка отменена."
+ 
+     # ─── Пароли ───
+     echo ""
+-    read -rsp "$(echo -e "${YELLOW}Введите пароль root: ${NC}")" ROOT_PASS; echo
+-    read -rsp "$(echo -e "${YELLOW}Повторите пароль root: ${NC}")" ROOT_PASS2; echo
+-    [[ "$ROOT_PASS" == "$ROOT_PASS2" ]] || error "Пароли root не совпадают!"
+-
+-    read -rsp "$(echo -e "${YELLOW}Введите пароль для пользователя ${USERNAME}: ${NC}")" USER_PASS; echo
+-    read -rsp "$(echo -e "${YELLOW}Повторите пароль для ${USERNAME}: ${NC}")" USER_PASS2; echo
+-    [[ "$USER_PASS" == "$USER_PASS2" ]] || error "Пароли пользователя не совпадают!"
++    if [[ "${AUTORUN:-0}" == "1" ]]; then
++        ROOT_PASS="${ROOT_PASS:-root}"
++        USER_PASS="${USER_PASS:-chezok}"
++        info "Автоматический режим: пароли root и ${USERNAME} установлены."
++    else
++        if [[ -n "${ROOT_PASS:-}" ]]; then
++            info "Пароль root получен из переменной окружения."
++        else
++            read -rsp "$(echo -e "${YELLOW}Введите пароль root: ${NC}")" ROOT_PASS; echo
++            read -rsp "$(echo -e "${YELLOW}Повторите пароль root: ${NC}")" ROOT_PASS2; echo
++            [[ "$ROOT_PASS" == "$ROOT_PASS2" ]] || error "Пароли root не совпадают!"
++        fi
++
++        if [[ -n "${USER_PASS:-}" ]]; then
++            info "Пароль пользователя ${USERNAME} получен из переменной окружения."
++        else
++            read -rsp "$(echo -e "${YELLOW}Введите пароль для пользователя ${USERNAME}: ${NC}")" USER_PASS; echo
++            read -rsp "$(echo -e "${YELLOW}Повторите пароль для ${USERNAME}: ${NC}")" USER_PASS2; echo
++            [[ "$USER_PASS" == "$USER_PASS2" ]] || error "Пароли пользователя не совпадают!"
++        fi
++    fi
+ 
+     # Экспортируем для chroot
+-    export ROOT_PASS USER_PASS TARGET_DISK EFI_PART ROOT_PART
++    export ROOT_PASS USER_PASS TARGET_DISK EFI_PART ROOT_PART AUTORUN
+ 
+     # ─── Разбивка диска ───
+     header "Разбивка диска ${TARGET_DISK}..."
+@@ -194,6 +235,7 @@
+ 
+     # Передаём переменные
+     cat > /mnt/install-vars.env << EOF
++AUTORUN='${AUTORUN:-0}'
+ ROOT_PASS='${ROOT_PASS}'
+ USER_PASS='${USER_PASS}'
+ USERNAME='${USERNAME}'
+@@ -231,11 +273,26 @@
+     header "CACHYOS INSTALLER — ФАЗА 2: НАСТРОЙКА СИСТЕМЫ (CHROOT)"
+ 
+     # Загружаем переменные
+-    source /install-vars.env 2>/dev/null || {
+-        # Если запущен вручную — спрашиваем
+-        read -rsp "Пароль root: " ROOT_PASS; echo
+-        read -rsp "Пароль пользователя (${USERNAME}): " USER_PASS; echo
+-    }
++    if [ -f /install-vars.env ]; then
++        source /install-vars.env
++    fi
++    AUTORUN="${AUTORUN:-0}"
++    if [[ -z "${ROOT_PASS:-}" ]]; then
++        if [[ "$AUTORUN" == "1" ]]; then
++            ROOT_PASS="root"
++            info "Автоматический режим: задан пароль root по умолчанию."
++        else
++            read -rsp "Пароль root: " ROOT_PASS; echo
++        fi
++    fi
++    if [[ -z "${USER_PASS:-}" ]]; then
++        if [[ "$AUTORUN" == "1" ]]; then
++            USER_PASS="chezok"
++            info "Автоматический режим: задан пароль пользователя (${USERNAME}) по умолчанию."
++        else
++            read -rsp "Пароль пользователя (${USERNAME}): " USER_PASS; echo
++        fi
++    fi
+ 
+     # ─── CachyOS репозитории ───
+     header "Подключение CachyOS репозиториев..."
+@@ -400,7 +457,39 @@
+     # ─── GRUB (без quiet, без nowatchdog, без кастомного разрешения) ───
+     header "Установка и настройка GRUB..."
+ 
+-    grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB --recheck
++    # Флаг --removable обязателен (R3): копирует загрузчик в /boot/efi/EFI/BOOT/BOOTX64.EFI,
++    # обеспечивая распознавание диска в UEFI BIOS даже при отсутствии или игнорировании NVRAM записей.
++    grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB --recheck --removable
++
++    # Гарантируем наличие обоих путей: fallback (/EFI/BOOT/BOOTX64.EFI) и NVRAM (/EFI/GRUB/grubx64.efi)
++    mkdir -p /boot/efi/EFI/GRUB
++    mkdir -p /boot/efi/EFI/BOOT
++
++    if [[ -f /boot/efi/EFI/BOOT/BOOTX64.EFI ]] && [[ ! -f /boot/efi/EFI/GRUB/grubx64.efi ]]; then
++        cp /boot/efi/EFI/BOOT/BOOTX64.EFI /boot/efi/EFI/GRUB/grubx64.efi
++        info "Скопирован /boot/efi/EFI/BOOT/BOOTX64.EFI -> /boot/efi/EFI/GRUB/grubx64.efi"
++    elif [[ -f /boot/efi/EFI/BOOT/bootx64.efi ]] && [[ ! -f /boot/efi/EFI/GRUB/grubx64.efi ]]; then
++        cp /boot/efi/EFI/BOOT/bootx64.efi /boot/efi/EFI/GRUB/grubx64.efi
++        info "Скопирован /boot/efi/EFI/BOOT/bootx64.efi -> /boot/efi/EFI/GRUB/grubx64.efi"
++    elif [[ -f /boot/efi/EFI/GRUB/grubx64.efi ]] && [[ ! -f /boot/efi/EFI/BOOT/BOOTX64.EFI ]]; then
++        cp /boot/efi/EFI/GRUB/grubx64.efi /boot/efi/EFI/BOOT/BOOTX64.EFI
++        info "Скопирован /boot/efi/EFI/GRUB/grubx64.efi -> /boot/efi/EFI/BOOT/BOOTX64.EFI"
++    fi
++
++    # Верификация наличия BOOTX64.EFI (R3 Acceptance Criteria)
++    if [[ -f /boot/efi/EFI/BOOT/BOOTX64.EFI ]] || [[ -f /boot/efi/EFI/BOOT/bootx64.efi ]]; then
++        local efi_file="/boot/efi/EFI/BOOT/BOOTX64.EFI"
++        [[ -f "$efi_file" ]] || efi_file="/boot/efi/EFI/BOOT/bootx64.efi"
++        local efi_size
++        efi_size=$(stat -c%s "$efi_file" 2>/dev/null || wc -c < "$efi_file")
++        ok "UEFI bootloader верифицирован: ${efi_file} присутствует (${efi_size} байт)."
++    else
++        error "Критическая ошибка: /boot/efi/EFI/BOOT/BOOTX64.EFI не найден после установки GRUB!"
++    fi
++
++    if [[ -f /boot/efi/EFI/GRUB/grubx64.efi ]]; then
++        ok "UEFI NVRAM bootloader верифицирован: /boot/efi/EFI/GRUB/grubx64.efi присутствует."
++    fi
+ 
+     cat > /etc/default/grub << 'EOF'
+ GRUB_DEFAULT=0

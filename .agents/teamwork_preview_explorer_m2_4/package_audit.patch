@@ -1,0 +1,157 @@
+diff -u -N -r a/install-arch.sh b/install-arch.sh
+--- a/install-arch.sh	2026-10-10 11:21:31.895560551 +0300
++++ b/install-arch.sh	2026-10-10 11:22:05.903258733 +0300
+@@ -793,7 +793,7 @@
+     if [ "$is_amd" -eq 1 ]; then
+         info "AMD GPU: установка mesa, vulkan-radeon, libva-mesa-driver..."
+         pacman -S --noconfirm --needed \
+-            mesa vulkan-radeon libva-mesa-driver mesa-vdpau vulkan-icd-loader \
++            mesa vulkan-radeon libva-mesa-driver vulkan-icd-loader \
+             xf86-video-amdgpu 2>/dev/null || true
+         ok "AMD GPU драйверы установлены."
+     fi
+@@ -808,7 +808,8 @@
+             pacman -S --noconfirm --needed mesa vulkan-icd-loader 2>/dev/null || true
+         else
+             info "NVIDIA GPU (Turing / RTX+): установка проприетарного драйвера nvidia..."
+-            pacman -S --noconfirm --needed nvidia nvidia-utils vulkan-icd-loader 2>/dev/null || true
++            pacman -S --noconfirm --needed linux-cachyos-bore-nvidia-open nvidia-utils vulkan-icd-loader 2>/dev/null \
++                || pacman -S --noconfirm --needed nvidia-open-dkms nvidia-utils vulkan-icd-loader 2>/dev/null || true
+             sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 nvidia-drm.modeset=1"/' /etc/default/grub 2>/dev/null || true
+         fi
+         ok "NVIDIA драйверы настроены."
+@@ -874,10 +875,15 @@
+         || su - "${USERNAME:-chezok}" -c "yay -S --noconfirm --needed --answerclean None --answerdiff None --answeredit None --answerupgrade None vibepanel-git" \
+         || warn "vibepanel не удалось установить из AUR"
+ 
+-    local aur_groups=(
+-        # Браузер и мессенджер (готовые быстрые бинарники)
+-        "zen-browser-bin ayugram-desktop-bin"
++    # Резервная установка zen-browser-bin и ayugram-desktop из AUR (только если отсутствуют в репозитории pacman)
++    if ! pacman -Q zen-browser-bin &>/dev/null; then
++        su - "${USERNAME:-chezok}" -c "yay -S --noconfirm --needed --answerclean None --answerdiff None --answeredit None --answerupgrade None zen-browser-bin" 2>/dev/null || true
++    fi
++    if ! pacman -Q ayugram-desktop &>/dev/null && ! pacman -Q ayugram-desktop-bin &>/dev/null; then
++        su - "${USERNAME:-chezok}" -c "yay -S --noconfirm --needed --answerclean None --answerdiff None --answeredit None --answerupgrade None ayugram-desktop-bin" 2>/dev/null || true
++    fi
+ 
++    local aur_groups=(
+         # Цветовые темы pywal
+         "python-pywal"
+ 
+diff -u -N -r a/install.sh b/install.sh
+--- a/install.sh	2026-10-10 11:21:31.898560514 +0300
++++ b/install.sh	2026-10-10 11:22:05.904941977 +0300
+@@ -793,7 +793,7 @@
+     if [ "$is_amd" -eq 1 ]; then
+         info "AMD GPU: установка mesa, vulkan-radeon, libva-mesa-driver..."
+         pacman -S --noconfirm --needed \
+-            mesa vulkan-radeon libva-mesa-driver mesa-vdpau vulkan-icd-loader \
++            mesa vulkan-radeon libva-mesa-driver vulkan-icd-loader \
+             xf86-video-amdgpu 2>/dev/null || true
+         ok "AMD GPU драйверы установлены."
+     fi
+@@ -808,7 +808,8 @@
+             pacman -S --noconfirm --needed mesa vulkan-icd-loader 2>/dev/null || true
+         else
+             info "NVIDIA GPU (Turing / RTX+): установка проприетарного драйвера nvidia..."
+-            pacman -S --noconfirm --needed nvidia nvidia-utils vulkan-icd-loader 2>/dev/null || true
++            pacman -S --noconfirm --needed linux-cachyos-bore-nvidia-open nvidia-utils vulkan-icd-loader 2>/dev/null \
++                || pacman -S --noconfirm --needed nvidia-open-dkms nvidia-utils vulkan-icd-loader 2>/dev/null || true
+             sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 nvidia-drm.modeset=1"/' /etc/default/grub 2>/dev/null || true
+         fi
+         ok "NVIDIA драйверы настроены."
+@@ -874,10 +875,15 @@
+         || su - "${USERNAME:-chezok}" -c "yay -S --noconfirm --needed --answerclean None --answerdiff None --answeredit None --answerupgrade None vibepanel-git" \
+         || warn "vibepanel не удалось установить из AUR"
+ 
+-    local aur_groups=(
+-        # Браузер и мессенджер (готовые быстрые бинарники)
+-        "zen-browser-bin ayugram-desktop-bin"
++    # Резервная установка zen-browser-bin и ayugram-desktop из AUR (только если отсутствуют в репозитории pacman)
++    if ! pacman -Q zen-browser-bin &>/dev/null; then
++        su - "${USERNAME:-chezok}" -c "yay -S --noconfirm --needed --answerclean None --answerdiff None --answeredit None --answerupgrade None zen-browser-bin" 2>/dev/null || true
++    fi
++    if ! pacman -Q ayugram-desktop &>/dev/null && ! pacman -Q ayugram-desktop-bin &>/dev/null; then
++        su - "${USERNAME:-chezok}" -c "yay -S --noconfirm --needed --answerclean None --answerdiff None --answeredit None --answerupgrade None ayugram-desktop-bin" 2>/dev/null || true
++    fi
+ 
++    local aur_groups=(
+         # Цветовые темы pywal
+         "python-pywal"
+ 
+diff -u -N -r a/tests/vm_acceptance_check.sh b/tests/vm_acceptance_check.sh
+--- a/tests/vm_acceptance_check.sh	2026-10-10 11:21:31.901560476 +0300
++++ b/tests/vm_acceptance_check.sh	2026-10-10 11:22:05.905818835 +0300
+@@ -157,6 +157,71 @@
+ fi
+ 
+ # -----------------------------------------------------------------------------
++# Check 15: Vibepanel Desktop Bar/Panel Installed (R1)
++# -----------------------------------------------------------------------------
++if pacman -Q vibepanel-bin &>/dev/null || pacman -Q vibepanel-git &>/dev/null || pacman -Q vibepanel &>/dev/null || which vibepanel &>/dev/null; then
++    vibe_ver=$(pacman -Q vibepanel-bin 2>/dev/null || pacman -Q vibepanel-git 2>/dev/null || which vibepanel 2>/dev/null || echo "installed")
++    report_check "PKG_VIBEPANEL" "PASS" "Vibepanel installed: ${vibe_ver}"
++else
++    report_check "PKG_VIBEPANEL" "FAIL" "Vibepanel is not installed"
++fi
++
++# -----------------------------------------------------------------------------
++# Check 16: Zen Browser Installed (R1)
++# -----------------------------------------------------------------------------
++if pacman -Q zen-browser-bin &>/dev/null || pacman -Q zen-browser &>/dev/null; then
++    zen_ver=$(pacman -Q zen-browser-bin 2>/dev/null || pacman -Q zen-browser 2>/dev/null)
++    report_check "PKG_ZEN_BROWSER" "PASS" "Zen browser installed: ${zen_ver}"
++else
++    report_check "PKG_ZEN_BROWSER" "FAIL" "Zen browser is not installed"
++fi
++
++# -----------------------------------------------------------------------------
++# Check 17: AyuGram Telegram Desktop Installed (R1)
++# -----------------------------------------------------------------------------
++if pacman -Q ayugram-desktop &>/dev/null || pacman -Q ayugram-desktop-bin &>/dev/null; then
++    ayu_ver=$(pacman -Q ayugram-desktop 2>/dev/null || pacman -Q ayugram-desktop-bin 2>/dev/null)
++    report_check "PKG_AYUGRAM_DESKTOP" "PASS" "AyuGram desktop installed: ${ayu_ver}"
++else
++    report_check "PKG_AYUGRAM_DESKTOP" "FAIL" "AyuGram desktop is not installed"
++fi
++
++# -----------------------------------------------------------------------------
++# Check 18: Core Wayland Compositors & Display Environment Installed (R1)
++# -----------------------------------------------------------------------------
++missing_env=()
++for p in niri hyprland waybar sddm; do
++    pacman -Q "$p" &>/dev/null || missing_env+=("$p")
++done
++if [[ ${#missing_env[@]} -eq 0 ]]; then
++    report_check "PKG_WAYLAND_ENV" "PASS" "All desktop environment packages installed (niri, hyprland, waybar, sddm)"
++else
++    report_check "PKG_WAYLAND_ENV" "FAIL" "Missing desktop environment packages: ${missing_env[*]}"
++fi
++
++# -----------------------------------------------------------------------------
++# Check 19: Core CLI Monitoring & Fetch Utilities Installed (R1)
++# -----------------------------------------------------------------------------
++missing_cli=()
++for p in btop htop fastfetch; do
++    pacman -Q "$p" &>/dev/null || missing_cli+=("$p")
++done
++if [[ ${#missing_cli[@]} -eq 0 ]]; then
++    report_check "PKG_CLI_UTILS" "PASS" "CLI utilities installed (btop, htop, fastfetch)"
++else
++    report_check "PKG_CLI_UTILS" "FAIL" "Missing CLI utilities: ${missing_cli[*]}"
++fi
++
++# -----------------------------------------------------------------------------
++# Check 20: Graphics Stack & Drivers Installed (R1)
++# -----------------------------------------------------------------------------
++if pacman -Q mesa &>/dev/null && (pacman -Q vulkan-intel &>/dev/null || pacman -Q vulkan-radeon &>/dev/null || pacman -Q vulkan-icd-loader &>/dev/null); then
++    report_check "PKG_GRAPHICS_STACK" "PASS" "Mesa and Vulkan driver stack installed"
++else
++    report_check "PKG_GRAPHICS_STACK" "FAIL" "Mesa / Vulkan driver stack is missing"
++fi
++
++# -----------------------------------------------------------------------------
+ # Summary and Final Verdict
+ # -----------------------------------------------------------------------------
+ echo ""

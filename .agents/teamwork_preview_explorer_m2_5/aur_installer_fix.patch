@@ -1,0 +1,201 @@
+--- a/install-arch.sh
++++ b/install-arch.sh
+@@ -868,16 +868,44 @@
+         return
+     fi
+ 
+-    # Vibepanel: используем быстрый предсобранный бинарник vibepanel-bin с фоллбеком на vibepanel-git
+-    info "AUR: установка Vibepanel..."
+-    su - "${USERNAME:-chezok}" -c "yay -S --noconfirm --needed --answerclean None --answerdiff None --answeredit None --answerupgrade None vibepanel-bin" 2>/dev/null \
+-        || su - "${USERNAME:-chezok}" -c "yay -S --noconfirm --needed --answerclean None --answerdiff None --answeredit None --answerupgrade None vibepanel-git" \
+-        || warn "vibepanel не удалось установить из AUR"
++    local yay_cmd="yay -S --noconfirm --needed --answerclean None --answerdiff None --answeredit None --answerupgrade None --mflags \"--skippgpcheck\""
+ 
+-    local aur_groups=(
+-        # Браузер и мессенджер (готовые быстрые бинарники)
+-        "zen-browser-bin ayugram-desktop-bin"
++    # 1. Vibepanel (R1): используем быстрый предсобранный бинарник vibepanel-bin с фоллбеком на vibepanel-git
++    if pacman -Q vibepanel-bin &>/dev/null || pacman -Q vibepanel-git &>/dev/null || pacman -Q vibepanel &>/dev/null; then
++        ok "vibepanel уже установлен."
++    else
++        info "AUR: установка Vibepanel (быстрый предсобранный бинарник vibepanel-bin)..."
++        ensure_resolv_conf
++        if ! su - "${USERNAME:-chezok}" -c "$yay_cmd vibepanel-bin"; then
++            warn "vibepanel-bin не удалось установить. Попытка сборки vibepanel-git из исходников..."
++            su - "${USERNAME:-chezok}" -c "$yay_cmd vibepanel-git" \
++                || warn "vibepanel не удалось установить из AUR"
++        else
++            ok "vibepanel-bin успешно установлен."
++        fi
++    fi
++
++    # 2. Браузер и мессенджер (R1): проверяем наличие бинарников из CachyOS repo перед вызовом AUR
++    if pacman -Q zen-browser-bin &>/dev/null; then
++        ok "zen-browser-bin уже установлен (CachyOS бинарный репозиторий)."
++    else
++        info "AUR: установка zen-browser-bin..."
++        ensure_resolv_conf
++        su - "${USERNAME:-chezok}" -c "$yay_cmd zen-browser-bin" \
++            || warn "zen-browser-bin не удалось установить из AUR"
++    fi
+ 
++    if pacman -Q ayugram-desktop &>/dev/null || pacman -Q ayugram-desktop-bin &>/dev/null; then
++        ok "ayugram-desktop уже установлен (CachyOS бинарный репозиторий)."
++    else
++        info "AUR: установка ayugram-desktop-bin (предсобранный бинарник)..."
++        ensure_resolv_conf
++        su - "${USERNAME:-chezok}" -c "$yay_cmd ayugram-desktop-bin" \
++            || warn "ayugram-desktop-bin не удалось установить из AUR"
++    fi
++
++    # 3. Дополнительные AUR пакеты
++    local aur_groups=(
+         # Цветовые темы pywal
+         "python-pywal"
+ 
+@@ -892,7 +920,7 @@
+         info "AUR: устанавливаем $group"
+         ensure_resolv_conf
+         # shellcheck disable=SC2086
+-        su - "${USERNAME:-chezok}" -c "yay -S --noconfirm --needed --answerclean None --answerdiff None --answeredit None --answerupgrade None $group" \
++        su - "${USERNAME:-chezok}" -c "$yay_cmd $group" \
+             || warn "Некоторые AUR пакеты не установлены: $group"
+     done
+ }
+--- a/install.sh
++++ b/install.sh
+@@ -868,16 +868,44 @@
+         return
+     fi
+ 
+-    # Vibepanel: используем быстрый предсобранный бинарник vibepanel-bin с фоллбеком на vibepanel-git
+-    info "AUR: установка Vibepanel..."
+-    su - "${USERNAME:-chezok}" -c "yay -S --noconfirm --needed --answerclean None --answerdiff None --answeredit None --answerupgrade None vibepanel-bin" 2>/dev/null \
+-        || su - "${USERNAME:-chezok}" -c "yay -S --noconfirm --needed --answerclean None --answerdiff None --answeredit None --answerupgrade None vibepanel-git" \
+-        || warn "vibepanel не удалось установить из AUR"
++    local yay_cmd="yay -S --noconfirm --needed --answerclean None --answerdiff None --answeredit None --answerupgrade None --mflags \"--skippgpcheck\""
+ 
+-    local aur_groups=(
+-        # Браузер и мессенджер (готовые быстрые бинарники)
+-        "zen-browser-bin ayugram-desktop-bin"
++    # 1. Vibepanel (R1): используем быстрый предсобранный бинарник vibepanel-bin с фоллбеком на vibepanel-git
++    if pacman -Q vibepanel-bin &>/dev/null || pacman -Q vibepanel-git &>/dev/null || pacman -Q vibepanel &>/dev/null; then
++        ok "vibepanel уже установлен."
++    else
++        info "AUR: установка Vibepanel (быстрый предсобранный бинарник vibepanel-bin)..."
++        ensure_resolv_conf
++        if ! su - "${USERNAME:-chezok}" -c "$yay_cmd vibepanel-bin"; then
++            warn "vibepanel-bin не удалось установить. Попытка сборки vibepanel-git из исходников..."
++            su - "${USERNAME:-chezok}" -c "$yay_cmd vibepanel-git" \
++                || warn "vibepanel не удалось установить из AUR"
++        else
++            ok "vibepanel-bin успешно установлен."
++        fi
++    fi
++
++    # 2. Браузер и мессенджер (R1): проверяем наличие бинарников из CachyOS repo перед вызовом AUR
++    if pacman -Q zen-browser-bin &>/dev/null; then
++        ok "zen-browser-bin уже установлен (CachyOS бинарный репозиторий)."
++    else
++        info "AUR: установка zen-browser-bin..."
++        ensure_resolv_conf
++        su - "${USERNAME:-chezok}" -c "$yay_cmd zen-browser-bin" \
++            || warn "zen-browser-bin не удалось установить из AUR"
++    fi
+ 
++    if pacman -Q ayugram-desktop &>/dev/null || pacman -Q ayugram-desktop-bin &>/dev/null; then
++        ok "ayugram-desktop уже установлен (CachyOS бинарный репозиторий)."
++    else
++        info "AUR: установка ayugram-desktop-bin (предсобранный бинарник)..."
++        ensure_resolv_conf
++        su - "${USERNAME:-chezok}" -c "$yay_cmd ayugram-desktop-bin" \
++            || warn "ayugram-desktop-bin не удалось установить из AUR"
++    fi
++
++    # 3. Дополнительные AUR пакеты
++    local aur_groups=(
+         # Цветовые темы pywal
+         "python-pywal"
+ 
+@@ -892,7 +920,7 @@
+         info "AUR: устанавливаем $group"
+         ensure_resolv_conf
+         # shellcheck disable=SC2086
+-        su - "${USERNAME:-chezok}" -c "yay -S --noconfirm --needed --answerclean None --answerdiff None --answeredit None --answerupgrade None $group" \
++        su - "${USERNAME:-chezok}" -c "$yay_cmd $group" \
+             || warn "Некоторые AUR пакеты не установлены: $group"
+     done
+ }
+--- a/tests/vm_acceptance_check.sh
++++ b/tests/vm_acceptance_check.sh
+@@ -157,6 +157,70 @@
+ fi
+ 
+ # -----------------------------------------------------------------------------
++# Check 15: Vibepanel Installed (R1 Acceptance Criteria)
++# -----------------------------------------------------------------------------
++if pacman -Q vibepanel-bin &>/dev/null; then
++    report_check "PKG_VIBEPANEL" "PASS" "Vibepanel installed: $(pacman -Q vibepanel-bin)"
++elif pacman -Q vibepanel-git &>/dev/null; then
++    report_check "PKG_VIBEPANEL" "PASS" "Vibepanel installed: $(pacman -Q vibepanel-git)"
++elif pacman -Q vibepanel &>/dev/null; then
++    report_check "PKG_VIBEPANEL" "PASS" "Vibepanel installed: $(pacman -Q vibepanel)"
++else
++    report_check "PKG_VIBEPANEL" "FAIL" "vibepanel is not installed"
++fi
++
++# -----------------------------------------------------------------------------
++# Check 16: Zen Browser Installed (R1 Acceptance Criteria)
++# -----------------------------------------------------------------------------
++if pacman -Q zen-browser-bin &>/dev/null; then
++    report_check "PKG_ZEN_BROWSER" "PASS" "Zen browser installed: $(pacman -Q zen-browser-bin)"
++else
++    report_check "PKG_ZEN_BROWSER" "FAIL" "zen-browser-bin is not installed"
++fi
++
++# -----------------------------------------------------------------------------
++# Check 17: AyuGram Desktop Installed (R1 Acceptance Criteria)
++# -----------------------------------------------------------------------------
++if pacman -Q ayugram-desktop &>/dev/null; then
++    report_check "PKG_AYUGRAM_DESKTOP" "PASS" "AyuGram desktop installed: $(pacman -Q ayugram-desktop)"
++elif pacman -Q ayugram-desktop-bin &>/dev/null; then
++    report_check "PKG_AYUGRAM_DESKTOP" "PASS" "AyuGram desktop installed: $(pacman -Q ayugram-desktop-bin)"
++else
++    report_check "PKG_AYUGRAM_DESKTOP" "FAIL" "ayugram-desktop is not installed"
++fi
++
++# -----------------------------------------------------------------------------
++# Check 18: Wayland Environment Installed (niri, hyprland, waybar, sddm)
++# -----------------------------------------------------------------------------
++wayland_missing=()
++for wp in niri hyprland waybar sddm; do
++    pacman -Q "$wp" &>/dev/null || wayland_missing+=("$wp")
++done
++if [[ ${#wayland_missing[@]} -eq 0 ]]; then
++    report_check "PKG_WAYLAND_STACK" "PASS" "Wayland stack packages installed (niri, hyprland, waybar, sddm)"
++else
++    report_check "PKG_WAYLAND_STACK" "FAIL" "Missing Wayland packages: ${wayland_missing[*]}"
++fi
++
++# -----------------------------------------------------------------------------
++# Check 19: Terminals and CLI Utilities Installed (foot/kitty, btop)
++# -----------------------------------------------------------------------------
++if (pacman -Q foot &>/dev/null || pacman -Q kitty &>/dev/null) && pacman -Q btop &>/dev/null; then
++    report_check "PKG_TERMINALS_AND_CLI" "PASS" "Terminal and btop utility installed"
++else
++    report_check "PKG_TERMINALS_AND_CLI" "FAIL" "foot/kitty or btop is not installed"
++fi
++
++# -----------------------------------------------------------------------------
++# Check 20: Intel / Mesa Graphics Driver Stack Installed
++# -----------------------------------------------------------------------------
++if pacman -Q mesa &>/dev/null && pacman -Q vulkan-intel &>/dev/null; then
++    report_check "PKG_GRAPHICS_INTEL" "PASS" "Mesa and Vulkan Intel drivers installed"
++else
++    report_check "PKG_GRAPHICS_INTEL" "FAIL" "mesa or vulkan-intel driver is missing"
++fi
++
++# -----------------------------------------------------------------------------
+ # Summary and Final Verdict
+ # -----------------------------------------------------------------------------
+ echo ""

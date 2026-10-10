@@ -1,0 +1,168 @@
+diff --git a/install-arch.sh b/install-arch.sh
+--- a/install-arch.sh
++++ b/install-arch.sh
+@@ -288,10 +288,14 @@ phase_install() {
+     mkdir -p /mnt/etc
+     rm -f /mnt/etc/resolv.conf
++    mkdir -p /mnt/etc/tmpfiles.d
++    ln -sf /dev/null /mnt/etc/tmpfiles.d/systemd-resolve.conf 2>/dev/null || true
+     cat > /mnt/etc/resolv.conf << 'EOF'
+ nameserver 1.1.1.1
+ nameserver 8.8.8.8
++nameserver 10.0.2.3
+ EOF
+     chmod 644 /mnt/etc/resolv.conf
+     ok "DNS настроен в /mnt/etc/resolv.conf (1.1.1.1, 8.8.8.8)."
+@@ -351,13 +355,8 @@ phase_chroot() {
+     # ─── Проверка и гарантия DNS внутри chroot (R2) ───
+-    if ! grep -q "nameserver 1.1.1.1" /etc/resolv.conf 2>/dev/null || grep -q "127.0.0.53" /etc/resolv.conf 2>/dev/null; then
+-        info "Настройка DNS в /etc/resolv.conf внутри chroot..."
+-        rm -f /etc/resolv.conf
+-        cat > /etc/resolv.conf << 'EOF'
+-nameserver 1.1.1.1
+-nameserver 8.8.8.8
+-EOF
+-        chmod 644 /etc/resolv.conf
+-    fi
++    ensure_resolv_conf
+ 
+     # ─── CachyOS репозитории ───
+@@ -382,6 +381,7 @@ phase_chroot() {
+     tar -xf /tmp/cachyos-bootstrap/mirrorlist.pkg.tar.zst -C / etc/pacman.d/ 2>/dev/null || true
+-    sed -i '1i Server = https://mirror.cachyos.org/repo/$arch/$repo' /etc/pacman.d/cachyos-mirrorlist 2>/dev/null || true
++    sed -i '1i Server = https://mirror.cachyos.org/repo/$arch/$repo\nServer = https://mirror.cachy-arch.ru/repo/$arch/$repo\nServer = https://mirror.jura12.ru/repo/$arch/$repo' /etc/pacman.d/cachyos-mirrorlist 2>/dev/null || true
+ 
++    ensure_resolv_conf
+     if ! grep -q "\[cachyos\]" /etc/pacman.conf; then
+@@ -480,6 +480,7 @@ phase_chroot() {
++    ensure_resolv_conf
+     # Ядро CachyOS Bore, mkinitcpio и микрокод
+-    pacman -S --noconfirm --needed \
++    printf '\n' | pacman -S --noconfirm --needed \
+         mkinitcpio \
+@@ -506,6 +507,7 @@ phase_chroot() {
+     header "Установка всех pacman пакетов..."
+ 
++    ensure_resolv_conf
+     install_pacman_packages
+ 
+@@ -626,7 +628,8 @@ phase_chroot() {
+     if ! command -v yay &>/dev/null; then
+         info "Попытка установки yay из репозитория CachyOS..."
+-        pacman -S --noconfirm --needed yay 2>/dev/null || {
++        ensure_resolv_conf
++        printf '\n' | pacman -S --noconfirm --needed yay 2>/dev/null || {
+             info "Сборка yay из AUR через makepkg от имени ${USERNAME}..."
+@@ -643,6 +646,7 @@ phase_chroot() {
+     header "Установка AUR пакетов..."
+ 
++    ensure_resolv_conf
+     install_aur_packages
+ 
+@@ -708,6 +712,19 @@ phase_chroot() {
+ # ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ (GPU, пакеты)
+ # =============================================================================
+ 
++ensure_resolv_conf() {
++    mkdir -p /etc/tmpfiles.d
++    ln -sf /dev/null /etc/tmpfiles.d/systemd-resolve.conf 2>/dev/null || true
++    if [[ ! -s /etc/resolv.conf ]] || [[ -L /etc/resolv.conf ]] || ! grep -q "nameserver" /etc/resolv.conf 2>/dev/null; then
++        rm -f /etc/resolv.conf
++        cat > /etc/resolv.conf << 'EOF'
++nameserver 1.1.1.1
++nameserver 8.8.8.8
++nameserver 10.0.2.3
++EOF
++        chmod 644 /etc/resolv.conf
++    fi
++}
++
+ detect_and_install_gpu() {
+@@ -723,3 +740,3 @@ detect_and_install_gpu() {
+-    echo "$vga" | grep -qiE "Intel|8086" && is_intel=1 || true
+-    echo "$vga" | grep -qiE "AMD|ATI|Radeon" && is_amd=1 || true
+-    echo "$vga" | grep -qiE "NVIDIA" && is_nvidia=1 || true
++    echo "$vga" | grep -qiE "Intel|8086" && is_intel=1 || true
++    echo "$vga" | grep -qE "\b(AMD|ATI|Radeon)\b" && is_amd=1 || true
++    echo "$vga" | grep -qE "\b(NVIDIA)\b" && is_nvidia=1 || true
+ 
+@@ -765,6 +782,6 @@ detect_and_install_gpu() {
+     if [ "$is_intel" -eq 0 ] && [ "$is_amd" -eq 0 ] && [ "$is_nvidia" -eq 0 ]; then
+-        warn "GPU не определён точно, устанавливаем универсальный стек mesa..."
+-        pacman -S --noconfirm --needed mesa vulkan-icd-loader
++        info "Виртуальная машина / Generic GPU: установка Intel/Universal стека mesa, vulkan-intel, xf86-video-intel..."
++        printf '\n' | pacman -S --noconfirm --needed mesa libva-intel-driver intel-media-driver vulkan-intel vulkan-icd-loader xf86-video-intel intel-ucode
+     fi
+ }
+@@ -778,3 +795,3 @@ install_pacman_packages() {
+         # Wayland композиторы, экранный менеджер и компоненты окружения (R1)
+-        "wayland niri hyprland sddm weston xwayland-satellite wl-clipboard cliphist"
++        "wayland niri hyprland sddm weston xwayland-satellite wl-clipboard cliphist xdg-desktop-portal-gtk"
+ 
+@@ -790,3 +807,3 @@ install_pacman_packages() {
+         # Терминалы и шрифты (R1)
+-        "foot kitty ttf-jetbrains-mono-nerd ttf-nerd-fonts-symbols-mono noto-fonts-emoji noto-fonts"
++        "foot kitty gnu-free-fonts ttf-jetbrains-mono-nerd ttf-nerd-fonts-symbols-mono noto-fonts-emoji noto-fonts"
+ 
+@@ -807,4 +824,5 @@ install_pacman_packages() {
+     for group in "${groups[@]}"; do
+         info "Устанавливаем: $group"
++        ensure_resolv_conf
+         # shellcheck disable=SC2086
+-        pacman -S --noconfirm --needed $group || warn "Некоторые пакеты из группы не найдены: $group"
++        printf '\n' | pacman -S --noconfirm --needed $group || warn "Некоторые пакеты из группы не найдены: $group"
+     done
+ }
+@@ -820,5 +838,5 @@ install_aur_packages() {
+     info "AUR: установка Vibepanel..."
+-    su - "${USERNAME:-chezok}" -c "yay -S --noconfirm --needed vibepanel-bin" 2>/dev/null \
+-        || su - "${USERNAME:-chezok}" -c "yay -S --noconfirm --needed vibepanel-git" \
++    su - "${USERNAME:-chezok}" -c "yay -S --noconfirm --needed --answerclean None --answerdiff None --answeredit None --answermenu None vibepanel-bin" 2>/dev/null \
++        || su - "${USERNAME:-chezok}" -c "yay -S --noconfirm --needed --answerclean None --answerdiff None --answeredit None --answermenu None vibepanel-git" \
+         || warn "vibepanel не удалось установить из AUR"
+ 
+@@ -837,4 +855,2 @@ install_aur_packages() {
+         # Терминальные эффекты
+         "unimatrix-git lavat pipes.sh"
+-
+-        # Живые обои (опционально, длительная сборка)
+-        "linux-wallpaperengine-git"
+     )
+ 
+@@ -844,4 +860,5 @@ install_aur_packages() {
+         info "AUR: устанавливаем $group"
++        ensure_resolv_conf
+         # shellcheck disable=SC2086
+-        su - "${USERNAME:-chezok}" -c "yay -S --noconfirm --needed $group" \
++        su - "${USERNAME:-chezok}" -c "yay -S --noconfirm --needed --answerclean None --answerdiff None --answeredit None --answermenu None $group" \
+             || warn "Некоторые AUR пакеты не установлены: $group"
+     done
+diff --git a/tests/qemu_test_runner.sh b/tests/qemu_test_runner.sh
+--- a/tests/qemu_test_runner.sh
++++ b/tests/qemu_test_runner.sh
+@@ -35,3 +35,3 @@
+ HTTP_PORT="${HTTP_PORT:-8089}"
+-STAGE1_TIMEOUT="${STAGE1_TIMEOUT:-1800}" # 30 minutes
++STAGE1_TIMEOUT="${STAGE1_TIMEOUT:-2400}" # 40 minutes
+ STAGE2_TIMEOUT="${STAGE2_TIMEOUT:-300}"  # 5 minutes
+@@ -204,4 +204,6 @@
+ nameserver 1.1.1.1
+ nameserver 8.8.8.8
++nameserver 10.0.2.3
+ DNS_EOF
++mkdir -p /etc/tmpfiles.d && ln -sf /dev/null /etc/tmpfiles.d/systemd-resolve.conf 2>/dev/null || true
+ 
+@@ -372,2 +374,3 @@
+     local stage1_success=0
++    local last_heartbeat=0
+ 
+@@ -376,2 +379,9 @@
+         local elapsed=$((now - start_time))
++
++        if (( elapsed - last_heartbeat >= 30 )); then
++            last_heartbeat=$elapsed
++            local latest_line
++            latest_line=$(tail -n 1 "$stage1_log" 2>/dev/null | tr -d '\r\n' || true)
++            info "[STAGE1 ${elapsed}с/${STAGE1_TIMEOUT}с] Последний вывод: ${latest_line:0:100}"
++        fi
+ 

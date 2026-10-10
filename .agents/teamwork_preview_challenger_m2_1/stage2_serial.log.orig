@@ -1,0 +1,361 @@
+[2J[001;001H[=3h[2J[001;001H[2J[001;001H[8;042;160t[2J[001;001H[2J[001;001H[8;056;240t[2J[001;001HBdsDxe: loading Boot0002 "UEFI Misc Device" from PciRoot(0x0)/Pci(0x3,0x0)
+BdsDxe: starting Boot0002 "UEFI Misc Device" from PciRoot(0x0)/Pci(0x3,0x0)
+:: running early hook [udev]
+Starting systemd-udevd version 262-1-arch
+:: running hook [udev]
+:: Triggering uevents...
+:: running hook [keymap]
+:: Loading keymap...kbd_mode: KDSKBMODE: Inappropriate ioctl for device
+%Gdone.
+:: performing fsck on 'UUID=bc921bc2-f652-47fe-a50d-aea1e3e72889'
+/usr/bin/fsck.xfs: XFS file system.
+:: mounting 'UUID=bc921bc2-f652-47fe-a50d-aea1e3e72889' on real root
+:: running cleanup hook [udev]
+P+q6E616D65\[18t7[32766;32766H[6n8[!p]104\[0m[?7h[1G[0J
+[0;1;39mWelcome to [0m[38;2;23;147;209mArch Linux[0m[0;1;39m![0m
+
+]3008;start=031e24f3ec7646cb85aa3f5bac8d05ab;user=root;hostname=chezok;machineid=585eb36a1fc547c5a08182c36ca140a0;bootid=a8911d8e26ff48efbebb052a4c8e7cc8;pid=1;pidfdid=1;comm=systemd;type=boot\[[0;32m  OK  [0m] Created slice [0;1;39mSlice /system/dirmngr[0m.
+[[0;32m  OK  [0m] Created slice [0;1;39mSlice /system/getty[0m.
+[[0;32m  OK  [0m] Created slice [0;1;39mSlice /system/gpg-agent[0m.
+[[0;32m  OK  [0m] Created slice [0;1;39mSlice /system/gpg-agent-browser[0m.
+[[0;32m  OK  [0m] Created slice [0;1;39mSlice /system/gpg-agent-extra[0m.
+[[0;32m  OK  [0m] Created slice [0;1;39mSlice /system/gpg-agent-ssh[0m.
+[[0;32m  OK  [0m] Created slice [0;1;39mSlice /system/keyboxd[0m.
+[[0;32m  OK  [0m] Created slice [0;1;39mSlice /system/modprobe[0m.
+[[0;32m  OK  [0m] Created slice [0;1;39mSlice /system/systemd-fsck[0m.
+[[0;32m  OK  [0m] Created slice [0;1;39mSlice /system/systemd-zram-setup[0m.
+[[0;32m  OK  [0m] Created slice [0;1;39mUser and Session Slice[0m.
+[[0;32m  OK  [0m] Started [0;1;39mDispatch Password Requests to Console Directory Watch[0m.
+[[0;32m  OK  [0m] Started [0;1;39mForward Password Requests to Wall Directory Watch[0m.
+[[0;32m  OK  [0m] Set up automount [0;1;39mArbitrary Executa…ormats File System Automount Point[0m.
+         Expecting device [0;1;39m/dev/disk/by-uuid/C2EB-982F[0m...
+         Expecting device [0;1;39m/dev/zram0[0m...
+[[0;32m  OK  [0m] Reached target [0;1;39mLocal dm-clone Devices[0m.
+[[0;32m  OK  [0m] Reached target [0;1;39mLogin Prompts[0m.
+[[0;32m  OK  [0m] Reached target [0;1;39mImage Downloads[0m.
+[[0;32m  OK  [0m] Reached target [0;1;39mLocal Integrity Protected Volumes[0m.
+[[0;32m  OK  [0m] Reached target [0;1;39mRemote File Systems[0m.
+[[0;32m  OK  [0m] Reached target [0;1;39mSlice Units[0m.
+[[0;32m  OK  [0m] Reached target [0;1;39mLocal Verity Protected Volumes[0m.
+[[0;32m  OK  [0m] Listening on [0;1;39mDevice-mapper event daemon FIFOs[0m.
+[[0;32m  OK  [0m] Listening on [0;1;39mQuery the User Interactively for a Password[0m.
+[[0;32m  OK  [0m] Listening on [0;1;39mProcess Core Dump Socket[0m.
+[[0;32m  OK  [0m] Listening on [0;1;39mCredential Encryption/Decryption[0m.
+[[0;32m  OK  [0m] Listening on [0;1;39mDisk Encryption Enrollment Service Socket[0m.
+[[0;32m  OK  [0m] Listening on [0;1;39mFactory Reset Management[0m.
+[[0;32m  OK  [0m] Listening on [0;1;39mHostname Service Socket[0m.
+[[0;32m  OK  [0m] Listening on [0;1;39mJournal Socket (/dev/log)[0m.
+[[0;32m  OK  [0m] Listening on [0;1;39mJournal Sockets[0m.
+[[0;32m  OK  [0m] Listening on [0;1;39mConsole Output Muting Service Socket[0m.
+[[0;32m  OK  [0m] Listening on [0;1;39mUserspace Out-Of-Memory (OOM) Killer Socket[0m.
+[[0;32m  OK  [0m] Listening on [0;1;39mDisk Repartitioning Service Socket[0m.
+[[0;32m  OK  [0m] Listening on [0;1;39mResolve Monitor Varlink Socket[0m.
+[[0;32m  OK  [0m] Listening on [0;1;39mResolve Service Varlink Socket[0m.
+[[0;32m  OK  [0m] Listening on [0;1;39mSimple Block Device Backed Storage Provider[0m.
+[[0;32m  OK  [0m] Listening on [0;1;39mSimple File System Backed Storage Provider[0m.
+[[0;32m  OK  [0m] Listening on [0;1;39mSystem Install Tool[0m.
+[[0;32m  OK  [0m] Listening on [0;1;39mSystem Updates[0m.
+[[0;32m  OK  [0m] Listening on [0;1;39mudev Kernel Socket[0m.
+[[0;32m  OK  [0m] Listening on [0;1;39mudev Varlink Socket[0m.
+[[0;32m  OK  [0m] Listening on [0;1;39mUser Database Manager Socket[0m.
+         Mounting [0;1;39mHuge Pages File System[0m...
+         Mounting [0;1;39mPOSIX Message Queue File System[0m...
+         Mounting [0;1;39mKernel Debug File System[0m...
+         Mounting [0;1;39mKernel Trace File System[0m...
+         Starting [0;1;39mCreate List of Static Device Nodes[0m...
+         Mounting [0;1;39mKernel Configuration File System[0m...
+         Mounting [0;1;39mFUSE Control File System[0m...
+         Starting [0;1;39mJournal Service[0m...
+         Starting [0;1;39mLoad Kernel Modules[0m...
+         Starting [0;1;39mRemount Root and Kernel File Systems[0m...
+[[0;32m  OK  [0m] Reached target [0;1;39mLocal Encrypted Volumes[0m.
+         Starting [0;1;39mLoad udev Rules from Credentials[0m...
+         Starting [0;1;39mColdplug All udev Devices[0m...
+[[0;32m  OK  [0m] Mounted [0;1;39mHuge Pages File System[0m.
+[[0;32m  OK  [0m] Mounted [0;1;39mPOSIX Message Queue File System[0m.
+[[0;32m  OK  [0m] Mounted [0;1;39mKernel Debug File System[0m.
+[[0;32m  OK  [0m] Mounted [0;1;39mKernel Trace File System[0m.
+[[0;32m  OK  [0m] Finished [0;1;39mCreate List of Static Device Nodes[0m.
+[[0;32m  OK  [0m] Mounted [0;1;39mKernel Configuration File System[0m.
+[[0;32m  OK  [0m] Mounted [0;1;39mFUSE Control File System[0m.
+[[0;32m  OK  [0m] Finished [0;1;39mRemount Root and Kernel File Systems[0m.
+[[0;32m  OK  [0m] Finished [0;1;39mLoad udev Rules from Credentials[0m.
+[[0;32m  OK  [0m] Started [0;1;39mJournal Service[0m.
+         Starting [0;1;39mFlush Journal to Persistent Storage[0m...
+         Starting [0;1;39mLoad/Save OS Random Seed[0m...
+         Starting [0;1;39mCreate Static Device Nodes in /dev gracefully[0m...
+[[0;32m  OK  [0m] Finished [0;1;39mLoad/Save OS Random Seed[0m.
+         Starting [0;1;39mUser Database Manager[0m...
+[[0;32m  OK  [0m] Finished [0;1;39mLoad Kernel Modules[0m.
+         Starting [0;1;39mApply Kernel Variables[0m...
+[[0;32m  OK  [0m] Finished [0;1;39mFlush Journal to Persistent Storage[0m.
+[[0;32m  OK  [0m] Finished [0;1;39mColdplug All udev Devices[0m.
+[[0;32m  OK  [0m] Finished [0;1;39mApply Kernel Variables[0m.
+[[0;32m  OK  [0m] Started [0;1;39mUser Database Manager[0m.
+[[0;32m  OK  [0m] Finished [0;1;39mCreate Static Device Nodes in /dev gracefully[0m.
+         Starting [0;1;39mCreate System Users[0m...
+[[0;32m  OK  [0m] Finished [0;1;39mCreate System Users[0m.
+         Starting [0;1;39mJournal Log Access Socket[0m...
+         Starting [0;1;39mNetwork Name Resolution[0m...
+         Starting [0;1;39mCreate Static Device Nodes in /dev[0m...
+[[0;32m  OK  [0m] Listening on [0;1;39mJournal Log Access Socket[0m.
+[[0;32m  OK  [0m] Finished [0;1;39mCreate Static Device Nodes in /dev[0m.
+[[0;32m  OK  [0m] Reached target [0;1;39mPreparation for Local File Systems[0m.
+         Starting [0;1;39mRule-based Manager for Device Events and Files[0m...
+[[0;32m  OK  [0m] Started [0;1;39mNetwork Name Resolution[0m.
+[[0;32m  OK  [0m] Reached target [0;1;39mHost and Network Name Lookups[0m.
+[[0;32m  OK  [0m] Started [0;1;39mRule-based Manager for Device Events and Files[0m.
+[[0;32m  OK  [0m] Listening on [0;1;39mLoad/Save RF Kill Switch Status /dev/rfkill Watch[0m.
+[[0;32m  OK  [0m] Found device [0;1;39m/dev/zram0[0m.
+         Starting [0;1;39mCreate swap on /dev/zram0[0m...
+[[0;32m  OK  [0m] Found device [0;1;39m/dev/disk/by-uuid/C2EB-982F[0m.
+[[0;32m  OK  [0m] Finished [0;1;39mCreate swap on /dev/zram0[0m.
+         Activating swap [0;1;39mCompressed Swap on /dev/zram0[0m...
+         Starting [0;1;39mFile System Check on /dev/disk/by-uuid/C2EB-982F[0m...
+[[0;32m  OK  [0m] Activated swap [0;1;39mCompressed Swap on /dev/zram0[0m.
+[[0;32m  OK  [0m] Reached target [0;1;39mSwaps[0m.
+         Starting [0;1;39mUserspace Out-Of-Memory (OOM) Killer[0m...
+[[0;32m  OK  [0m] Finished [0;1;39mFile System Check on /dev/disk/by-uuid/C2EB-982F[0m.
+[[0;32m  OK  [0m] Started [0;1;39mUserspace Out-Of-Memory (OOM) Killer[0m.
+         Starting [0;1;39mVirtual Console Setup[0m...
+[[0;32m  OK  [0m] Finished [0;1;39mVirtual Console Setup[0m.
+         Mounting [0;1;39m/boot/efi[0m...
+         Mounting [0;1;39mTemporary Directory /tmp[0m...
+[[0;32m  OK  [0m] Listening on [0;1;39mDisk Image Download Service Socket[0m.
+[[0;32m  OK  [0m] Mounted [0;1;39mTemporary Directory /tmp[0m.
+[[0;32m  OK  [0m] Mounted [0;1;39m/boot/efi[0m.
+[[0;32m  OK  [0m] Reached target [0;1;39mLocal File Systems[0m.
+[[0;32m  OK  [0m] Listening on [0;1;39mBoot Loader Control Service Socket[0m.
+[[0;32m  OK  [0m] Listening on [0;1;39mSystem Extension Image Management[0m.
+         Starting [0;1;39mCreate System Files and Directories[0m...
+         Starting [0;1;39mLoad JSON user/group Records from Credentials[0m...
+[[0;32m  OK  [0m] Finished [0;1;39mLoad JSON user/group Records from Credentials[0m.
+[[0;32m  OK  [0m] Finished [0;1;39mCreate System Files and Directories[0m.
+         Starting [0;1;39mRebuild Dynamic Linker Cache[0m...
+         Starting [0;1;39mRebuild Journal Catalog[0m...
+         Starting [0;1;39mRecord System Boot/Shutdown in UTMP[0m...
+[[0;32m  OK  [0m] Finished [0;1;39mRecord System Boot/Shutdown in UTMP[0m.
+[[0;32m  OK  [0m] Finished [0;1;39mRebuild Journal Catalog[0m.
+[[0;32m  OK  [0m] Finished [0;1;39mRebuild Dynamic Linker Cache[0m.
+         Starting [0;1;39mUpdate is Completed[0m...
+[[0;32m  OK  [0m] Finished [0;1;39mUpdate is Completed[0m.
+[[0;32m  OK  [0m] Reached target [0;1;39mSystem Initialization[0m.
+[[0;32m  OK  [0m] Started [0;1;39mMonitor Timezone Changes to Set Wireless Regulatory Domain[0m.
+[[0;32m  OK  [0m] Started [0;1;39mRefresh existing PGP keys of archlinux-keyring regularly[0m.
+[[0;32m  OK  [0m] Started [0;1;39mDaily verification of password and group files[0m.
+[[0;32m  OK  [0m] Started [0;1;39mDaily Cleanup of Temporary Directories[0m.
+[[0;32m  OK  [0m] Reached target [0;1;39mPath Units[0m.
+[[0;32m  OK  [0m] Reached target [0;1;39mTimer Units[0m.
+[[0;32m  OK  [0m] Listening on [0;1;39mD-Bus System Message Bus Socket[0m.
+[[0;32m  OK  [0m] Listening on [0;1;39mGnuPG network certifi…ent daemon for /etc/pacman.d/gnupg[0m.
+[[0;32m  OK  [0m] Listening on [0;1;39mGnuPG cryptographic a… browsers) for /etc/pacman.d/gnupg[0m.
+[[0;32m  OK  [0m] Listening on [0;1;39mGnuPG cryptographic a…estricted) for /etc/pacman.d/gnupg[0m.
+[[0;32m  OK  [0m] Listening on [0;1;39mGnuPG cryptographic a…emulation) for /etc/pacman.d/gnupg[0m.
+[[0;32m  OK  [0m] Listening on [0;1;39mGnuPG cryptographic a…rase cache for /etc/pacman.d/gnupg[0m.
+[[0;32m  OK  [0m] Listening on [0;1;39mGnuPG public key mana…nt service for /etc/pacman.d/gnupg[0m.
+[[0;32m  OK  [0m] Listening on [0;1;39mAuthorization Manager Agent Helper[0m.
+[[0;32m  OK  [0m] Listening on [0;1;39mOpenSSH Server Socket…temd-ssh-generator, AF_UNIX Local)[0m.
+[[0;32m  OK  [0m] Listening on [0;1;39mUser Login Management Varlink Socket[0m.
+[[0;32m  OK  [0m] Listening on [0;1;39mVirtual Machine and C…tainer Registration Service Socket[0m.
+[[0;32m  OK  [0m] Reached target [0;1;39mSocket Units[0m.
+         Starting [0;1;39mD-Bus System Message Bus[0m...
+[[0;32m  OK  [0m] Started [0;1;39mD-Bus System Message Bus[0m.
+[[0;32m  OK  [0m] Reached target [0;1;39mBasic System[0m.
+[[0;32m  OK  [0m] Started [0;1;39mAnanicy-Cpp - ANother Auto NICe daemon in C++[0m.
+         Starting [0;1;39mNetwork Manager[0m...
+         Starting [0;1;39mSSH Key Generation[0m...
+         Starting [0;1;39mUser Login Management[0m...
+         Starting [0;1;39mDisk Manager[0m...
+[[0;32m  OK  [0m] Started [0;1;39mUser Login Management[0m.
+         Starting [0;1;39mAuthorization Manager[0m...
+         Starting [0;1;39mHostname Service[0m...
+[[0;32m  OK  [0m] Started [0;1;39mHostname Service[0m.
+[[0;32m  OK  [0m] Started [0;1;39mAuthorization Manager[0m.
+[[0;32m  OK  [0m] Started [0;1;39mDisk Manager[0m.
+[[0;32m  OK  [0m] Finished [0;1;39mSSH Key Generation[0m.
+         Starting [0;1;39mNetwork Manager Script Dispatcher Service[0m...
+[[0;32m  OK  [0m] Started [0;1;39mNetwork Manager[0m.
+[[0;32m  OK  [0m] Reached target [0;1;39mNetwork[0m.
+         Starting [0;1;39mOpenSSH Daemon[0m...
+         Starting [0;1;39mPermit User Sessions[0m...
+[[0;32m  OK  [0m] Started [0;1;39mNetwork Manager Script Dispatcher Service[0m.
+[[0;32m  OK  [0m] Finished [0;1;39mPermit User Sessions[0m.
+[[0;32m  OK  [0m] Started [0;1;39mOpenSSH Daemon[0m.
+[[0;32m  OK  [0m] Reached target [0;1;39mMulti-User System[0m.
+[[0;32m  OK  [0m] Reached target [0;1;39mSSH Access Available[0m.
+         Starting [0;1;39mPower Profiles daemon[0m...
+[[0;32m  OK  [0m] Started [0;1;39mSimple Desktop Display Manager[0m.
+[[0;32m  OK  [0m] Started [0;1;39mPower Profiles daemon[0m.
+[[0;32m  OK  [0m] Reached target [0;1;39mGraphical Interface[0m.
+         Starting [0;1;39mMilestone 2 Acceptance Criteria Verification[0m...
+P+q6E616D65\
+=================================================================
+  CACHYOS / ARCH LINUX VM ACCEPTANCE TEST SUITE (MILESTONE 2)   
+=================================================================
+Timestamp: 2026-10-10T07:54:29Z
+Hostname : chezok
+Uptime   :  10:54:29 up 0 min,  0 users,  load average: 0.16, 0.03, 0.01
+
+[ACCEPTANCE_CHECK] id=UEFI_BOOTX64_EXISTS status=PASS details="Found /boot/efi/EFI/BOOT/BOOTX64.EFI (172032 bytes)"
+[ACCEPTANCE_CHECK] id=UEFI_GRUBX64_EXISTS status=PASS details="Found /boot/efi/EFI/GRUB/grubx64.efi (172032 bytes)"
+[ACCEPTANCE_CHECK] id=KERNEL_CACHYOS_BORE status=PASS details="Running kernel: 7.2.7-1-cachyos-bore"
+[ACCEPTANCE_CHECK] id=SERVICE_ENABLED_NETWORKMANAGER status=PASS details="Service NetworkManager is enabled"
+[ACCEPTANCE_CHECK] id=SERVICE_ENABLED_BLUETOOTH status=PASS details="Service bluetooth is enabled"
+[ACCEPTANCE_CHECK] id=SERVICE_ENABLED_SDDM status=PASS details="Service sddm is enabled"
+[ACCEPTANCE_CHECK] id=SERVICE_ENABLED_UDISKS2 status=PASS details="Service udisks2 is enabled"
+[ACCEPTANCE_CHECK] id=SERVICE_ACTIVE_NETWORKMANAGER status=PASS details="Service NetworkManager is active"
+[ACCEPTANCE_CHECK] id=SERVICE_ACTIVE_BLUETOOTH status=PASS details="Service bluetooth state is acceptable in VM without bluetooth controller: inactive"
+[ACCEPTANCE_CHECK] id=SERVICE_ACTIVE_SDDM status=PASS details="Service sddm is active"
+[ACCEPTANCE_CHECK] id=SERVICE_ACTIVE_UDISKS2 status=PASS details="Service udisks2 is active"
+[ACCEPTANCE_CHECK] id=USER_CHEZOK_WHEEL status=PASS details="User chezok exists in groups: chezok network power wheel audio optical storage video"
+[ACCEPTANCE_CHECK] id=DNS_RESOLV_CONF status=PASS details="Valid nameservers present in /etc/resolv.conf: nameserver 127.0.0.53 "
+[ACCEPTANCE_CHECK] id=PKG_CACHYOS_BORE status=PASS details="Package installed: linux-cachyos-bore 7.2.7-1"
+
+=================================================================
+                      ACCEPTANCE SUMMARY                         
+=================================================================
+Total Checks : 14
+Passed Checks: 14
+Failed Checks: 0
+[ACCEPTANCE_SUMMARY] RESULT=PASSED TOTAL=14 PASSED=14 FAILED=0
+=== VM ACCEPTANCE VERIFICATION SUCCESSFUL ===
+=================================================================
+
+[[0;32m  OK  [0m] Created slice [0;1;39mUser Slice of UID 964[0m.
+         Starting [0;1;39mUser Runtime Directory /run/user/964[0m...
+[[0;32m  OK  [0m] Finished [0;1;39mUser Runtime Directory /run/user/964[0m.
+         Starting [0;1;39mUser Manager for UID 964[0m...
+[[0;32m  OK  [0m] Started [0;1;39mUser Manager for UID 964[0m.
+[[0;32m  OK  [0m] Started [0;1;39mSession c1 of User sddm[0m.
+Shutting down virtual machine...
+[[0;32m  OK  [0m] Stopped [0;1;39mMilestone 2 Acceptance Criteria Verification[0m.
+         Stopping [0;1;39mSession c1 of User sddm[0m...
+[[0;32m  OK  [0m] Removed slice [0;1;39mSlice /system/getty[0m.
+[[0;32m  OK  [0m] Removed slice [0;1;39mSlice /system/modprobe[0m.
+[[0;32m  OK  [0m] Stopped target [0;1;39mGraphical Interface[0m.
+[[0;32m  OK  [0m] Stopped target [0;1;39mHost and Network Name Lookups[0m.
+[[0;32m  OK  [0m] Stopped target [0;1;39mSSH Access Available[0m.
+[[0;32m  OK  [0m] Stopped target [0;1;39mTimer Units[0m.
+[[0;32m  OK  [0m] Stopped [0;1;39mRefresh existing PGP keys of archlinux-keyring regularly[0m.
+[[0;32m  OK  [0m] Stopped [0;1;39mDaily verification of password and group files[0m.
+[[0;32m  OK  [0m] Stopped [0;1;39mDaily Cleanup of Temporary Directories[0m.
+[[0;32m  OK  [0m] Closed [0;1;39mLoad/Save RF Kill Switch Status /dev/rfkill Watch[0m.
+         Stopping [0;1;39mNetwork Manager Script Dispatcher Service[0m...
+         Starting [0;1;39mGenerate shutdown-ramfs[0m...
+         Stopping [0;1;39mAuthorization Manager[0m...
+         Stopping [0;1;39mPower Profiles daemon[0m...
+         Stopping [0;1;39mSimple Desktop Display Manager[0m...
+         Stopping [0;1;39mHostname Service[0m...
+         Stopping [0;1;39mLoad/Save OS Random Seed[0m...
+[[0;32m  OK  [0m] Stopped [0;1;39mLoad udev Rules from Credentials[0m.
+         Stopping [0;1;39mDisk Manager[0m...
+[[0;32m  OK  [0m] Stopped [0;1;39mAuthorization Manager[0m.
+[[0;32m  OK  [0m] Stopped [0;1;39mHostname Service[0m.
+[[0;32m  OK  [0m] Stopped [0;1;39mNetwork Manager Script Dispatcher Service[0m.
+[[0;32m  OK  [0m] Stopped [0;1;39mPower Profiles daemon[0m.
+[[0;32m  OK  [0m] Stopped [0;1;39mDisk Manager[0m.
+[[0;32m  OK  [0m] Stopped [0;1;39mLoad/Save OS Random Seed[0m.
+[[0;32m  OK  [0m] Stopped [0;1;39mSession c1 of User sddm[0m.
+[[0;32m  OK  [0m] Stopped target [0;1;39mMulti-User System[0m.
+[[0;32m  OK  [0m] Stopped target [0;1;39mLogin Prompts[0m.
+         Stopping [0;1;39mAnanicy-Cpp - ANother Auto NICe daemon in C++[0m...
+         Stopping [0;1;39mOpenSSH Daemon[0m...
+         Stopping [0;1;39mUser Manager for UID 964[0m...
+[[0;32m  OK  [0m] Stopped [0;1;39mOpenSSH Daemon[0m.
+[[0;32m  OK  [0m] Stopped [0;1;39mSimple Desktop Display Manager[0m.
+[[0;32m  OK  [0m] Stopped [0;1;39mUser Manager for UID 964[0m.
+[[0;32m  OK  [0m] Finished [0;1;39mGenerate shutdown-ramfs[0m.
+         Stopping [0;1;39mPermit User Sessions[0m...
+         Stopping [0;1;39mUser Runtime Directory /run/user/964[0m...
+[[0;32m  OK  [0m] Stopped [0;1;39mPermit User Sessions[0m.
+[[0;32m  OK  [0m] Stopped target [0;1;39mNetwork[0m.
+[[0;32m  OK  [0m] Stopped target [0;1;39mRemote File Systems[0m.
+         Stopping [0;1;39mNetwork Manager[0m...
+[[0;32m  OK  [0m] Stopped [0;1;39mLoad JSON user/group Records from Credentials[0m.
+[[0;32m  OK  [0m] Unmounted [0;1;39m/run/user/964[0m.
+[[0;32m  OK  [0m] Stopped [0;1;39mUser Runtime Directory /run/user/964[0m.
+[[0;32m  OK  [0m] Removed slice [0;1;39mUser Slice of UID 964[0m.
+         Stopping [0;1;39mUser Login Management[0m...
+         Stopping [0;1;39mUserspace Out-Of-Memory (OOM) Killer[0m...
+[[0;32m  OK  [0m] Stopped [0;1;39mUserspace Out-Of-Memory (OOM) Killer[0m.
+[[0;32m  OK  [0m] Stopped [0;1;39mUser Login Management[0m.
+[[0;32m  OK  [0m] Stopped [0;1;39mNetwork Manager[0m.
+[[0;32m  OK  [0m] Stopped [0;1;39mAnanicy-Cpp - ANother Auto NICe daemon in C++[0m.
+[[0;32m  OK  [0m] Stopped target [0;1;39mBasic System[0m.
+[[0;32m  OK  [0m] Stopped target [0;1;39mPath Units[0m.
+[[0;32m  OK  [0m] Stopped [0;1;39mMonitor Timezone Changes to Set Wireless Regulatory Domain[0m.
+[[0;32m  OK  [0m] Stopped target [0;1;39mSlice Units[0m.
+[[0;32m  OK  [0m] Removed slice [0;1;39mUser and Session Slice[0m.
+[[0;32m  OK  [0m] Stopped target [0;1;39mSocket Units[0m.
+[[0;32m  OK  [0m] Closed [0;1;39mGnuPG network certificate m…ent daemon for /etc/pacman.d/gnupg[0m.
+[[0;32m  OK  [0m] Removed slice [0;1;39mSlice /system/dirmngr[0m.
+[[0;32m  OK  [0m] Closed [0;1;39mGnuPG cryptographic agent a… browsers) for /etc/pacman.d/gnupg[0m.
+[[0;32m  OK  [0m] Removed slice [0;1;39mSlice /system/gpg-agent-browser[0m.
+[[0;32m  OK  [0m] Closed [0;1;39mGnuPG cryptographic agent a…estricted) for /etc/pacman.d/gnupg[0m.
+[[0;32m  OK  [0m] Removed slice [0;1;39mSlice /system/gpg-agent-extra[0m.
+[[0;32m  OK  [0m] Closed [0;1;39mGnuPG cryptographic agent (…emulation) for /etc/pacman.d/gnupg[0m.
+[[0;32m  OK  [0m] Removed slice [0;1;39mSlice /system/gpg-agent-ssh[0m.
+[[0;32m  OK  [0m] Closed [0;1;39mGnuPG cryptographic agent a…rase cache for /etc/pacman.d/gnupg[0m.
+[[0;32m  OK  [0m] Removed slice [0;1;39mSlice /system/gpg-agent[0m.
+[[0;32m  OK  [0m] Closed [0;1;39mGnuPG public key management service for /etc/pacman.d/gnupg[0m.
+[[0;32m  OK  [0m] Removed slice [0;1;39mSlice /system/keyboxd[0m.
+[[0;32m  OK  [0m] Closed [0;1;39mAuthorization Manager Agent Helper[0m.
+[[0;32m  OK  [0m] Closed [0;1;39mOpenSSH Server Socket (systemd-ssh-generator, AF_UNIX Local)[0m.
+[[0;32m  OK  [0m] Closed [0;1;39mHostname Service Socket[0m.
+[[0;32m  OK  [0m] Closed [0;1;39mDisk Image Download Service Socket[0m.
+[[0;32m  OK  [0m] Closed [0;1;39mUser Login Management Varlink Socket[0m.
+[[0;32m  OK  [0m] Closed [0;1;39mVirtual Machine and Container Registration Service Socket[0m.
+[[0;32m  OK  [0m] Closed [0;1;39mConsole Output Muting Service Socket[0m.
+[[0;32m  OK  [0m] Closed [0;1;39mUserspace Out-Of-Memory (OOM) Killer Socket[0m.
+[[0;32m  OK  [0m] Closed [0;1;39mDisk Repartitioning Service Socket[0m.
+[[0;32m  OK  [0m] Closed [0;1;39mSystem Install Tool[0m.
+         Stopping [0;1;39mD-Bus System Message Bus[0m...
+[[0;32m  OK  [0m] Stopped [0;1;39mD-Bus System Message Bus[0m.
+[[0;32m  OK  [0m] Closed [0;1;39mD-Bus System Message Bus Socket[0m.
+[[0;32m  OK  [0m] Stopped target [0;1;39mSystem Initialization[0m.
+[[0;32m  OK  [0m] Unset automount [0;1;39mArbitrary Executab…ormats File System Automount Point[0m.
+[[0;32m  OK  [0m] Stopped target [0;1;39mLocal dm-clone Devices[0m.
+[[0;32m  OK  [0m] Stopped target [0;1;39mLocal Encrypted Volumes[0m.
+[[0;32m  OK  [0m] Stopped [0;1;39mDispatch Password Requests to Console Directory Watch[0m.
+[[0;32m  OK  [0m] Stopped [0;1;39mForward Password Requests to Wall Directory Watch[0m.
+[[0;32m  OK  [0m] Stopped target [0;1;39mImage Downloads[0m.
+[[0;32m  OK  [0m] Stopped target [0;1;39mLocal Integrity Protected Volumes[0m.
+[[0;32m  OK  [0m] Stopped target [0;1;39mLocal Verity Protected Volumes[0m.
+         Stopping [0;1;39mNetwork Name Resolution[0m...
+[[0;32m  OK  [0m] Stopped [0;1;39mUpdate is Completed[0m.
+[[0;32m  OK  [0m] Stopped [0;1;39mRebuild Dynamic Linker Cache[0m.
+[[0;32m  OK  [0m] Stopped [0;1;39mRebuild Journal Catalog[0m.
+         Stopping [0;1;39mRecord System Boot/Shutdown in UTMP[0m...
+[[0;32m  OK  [0m] Stopped [0;1;39mNetwork Name Resolution[0m.
+[[0;32m  OK  [0m] Closed [0;1;39mResolve Monitor Varlink Socket[0m.
+[[0;32m  OK  [0m] Closed [0;1;39mResolve Service Varlink Socket[0m.
+[[0;32m  OK  [0m] Stopped [0;1;39mApply Kernel Variables[0m.
+[[0;32m  OK  [0m] Closed [0;1;39mProcess Core Dump Socket[0m.
+[[0;32m  OK  [0m] Stopped [0;1;39mLoad Kernel Modules[0m.
+[[0;32m  OK  [0m] Stopped [0;1;39mRecord System Boot/Shutdown in UTMP[0m.
+[[0;32m  OK  [0m] Stopped [0;1;39mCreate System Files and Directories[0m.
+[[0;32m  OK  [0m] Stopped target [0;1;39mLocal File Systems[0m.
+         Unmounting [0;1;39m/boot/efi[0m...
+         Unmounting [0;1;39mTemporary Directory /tmp[0m...
+[[0;32m  OK  [0m] Unmounted [0;1;39m/boot/efi[0m.
+[[0;32m  OK  [0m] Unmounted [0;1;39mTemporary Directory /tmp[0m.
+[[0;32m  OK  [0m] Stopped target [0;1;39mSwaps[0m.
+         Deactivating swap [0;1;39m/dev/disk/by-diskseq/4[0m...
+[[0;32m  OK  [0m] Stopped [0;1;39mFile System Check on /dev/disk/by-uuid/C2EB-982F[0m.
+[[0;32m  OK  [0m] Removed slice [0;1;39mSlice /system/systemd-fsck[0m.
+[[0;32m  OK  [0m] Stopped target [0;1;39mPreparation for Local File Systems[0m.
+[[0;32m  OK  [0m] Stopped [0;1;39mCreate Static Device Nodes in /dev[0m.
+[[0;32m  OK  [0m] Stopped [0;1;39mCreate System Users[0m.
+[[0;32m  OK  [0m] Stopped [0;1;39mRemount Root and Kernel File Systems[0m.
+[[0;32m  OK  [0m] Stopped [0;1;39mCreate Static Device Nodes in /dev gracefully[0m.
+[[0;32m  OK  [0m] Deactivated swap [0;1;39m/dev/disk/by-diskseq/4[0m.
+[[0;32m  OK  [0m] Deactivated swap [0;1;39mCompressed Swap on /dev/zram0[0m.
+[[0;32m  OK  [0m] Reached target [0;1;39mUnmount All Filesystems[0m.
+         Stopping [0;1;39mCreate swap on /dev/zram0[0m...
+[[0;32m  OK  [0m] Stopped [0;1;39mCreate swap on /dev/zram0[0m.
+[[0;32m  OK  [0m] Removed slice [0;1;39mSlice /system/systemd-zram-setup[0m.
+[[0;32m  OK  [0m] Reached target [0;1;39mSystem Shutdown[0m.
+[[0;32m  OK  [0m] Reached target [0;1;39mLate Shutdown Services[0m.
+[[0;32m  OK  [0m] Finished [0;1;39mSystem Power Off[0m.
+[[0;32m  OK  [0m] Reached target [0;1;39mSystem Power Off[0m.
+]3008;end=031e24f3ec7646cb85aa3f5bac8d05ab\[18t7[32766;32766H[6n8[!p]104\[0m[?7h[1G[0J[   12.910834] reboot: Power down
