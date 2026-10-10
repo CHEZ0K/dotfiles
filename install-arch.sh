@@ -584,6 +584,8 @@ GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3"
 GRUB_CMDLINE_LINUX=""
 GRUB_PRELOAD_MODULES="part_gpt part_msdos"
 GRUB_TIMEOUT_STYLE=menu
+GRUB_GFXMODE=keep
+GRUB_GFXPAYLOAD_LINUX=keep
 GRUB_DISABLE_RECOVERY=true
 EOF
 
@@ -1026,6 +1028,9 @@ deploy_dotfiles() {
 
     # ─── Vibepanel ───
     safe_copy "$df/vibepanel" "$cfg/vibepanel"
+    if [[ "$target_user" != "chezok" ]]; then
+        find "$cfg/vibepanel" -type f -exec sed -i "s|/home/chezok|/home/${target_user}|g" {} +
+    fi
     if lspci 2>/dev/null | grep -qi "Ivy Bridge\|Sandy Bridge\|Haswell"; then
         info "Legacy Intel GPU: отключаем blur в Vibepanel для предотвращения краша Wayland (прозрачность сохранена)..."
         sed -i 's/blur = true/blur = false/' "$cfg/vibepanel/config.toml" 2>/dev/null || true
@@ -1299,7 +1304,7 @@ GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3"
 GRUB_CMDLINE_LINUX=""
 GRUB_PRELOAD_MODULES="part_gpt part_msdos"
 GRUB_TIMEOUT_STYLE=menu
-GRUB_GFXMODE=auto
+GRUB_GFXMODE=keep
 GRUB_GFXPAYLOAD_LINUX=keep
 GRUB_DISABLE_RECOVERY=true
 GRUB_THEME="/boot/grub/themes/asuka/theme.txt"

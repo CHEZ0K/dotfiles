@@ -68,15 +68,55 @@ sectioned-bar.bar {
 /* ==================== BASE ISLAND CONTAINERS ==================== */
 
 .bar-section--left,
-.bar-section--right,
-.bar-section--center {
-  background: transparent;
+.bar-section--right {
   background-color: transparent;
-  background-image: none;
-  border: none;
-  box-shadow: none;
+  background-image: 
+    url('/home/chezok/.config/vibepanel/flare_cap_left_grad.svg'),
+    url('/home/chezok/.config/vibepanel/flare_cap_right_grad.svg'),
+    linear-gradient(to bottom, 
+      rgba(52, 44, 35, 1.0) 0px, 
+      rgba(52, 44, 35, 1.0) 4px, 
+      rgba(52, 44, 35, 0.85) 6px, 
+      rgba(52, 44, 35, 0.58) 9px, 
+      rgba(52, 44, 35, 0.58) 28px);
+  background-position: 
+    left top,
+    right top,
+    28px 0px;
+  background-repeat: 
+    no-repeat,
+    no-repeat,
+    no-repeat;
+  background-size: 
+    28px 100%,
+    28px 100%,
+    calc(100% - 56px) 100%;
   padding: 0 16px;
   min-height: 28px;
+  border: none;
+}
+
+.bar-section--center {
+  background-color: transparent;
+  background-image: 
+    url('/home/chezok/.config/vibepanel/flare_cap_left.svg'),
+    url('/home/chezok/.config/vibepanel/flare_cap_right.svg'),
+    linear-gradient(to bottom, rgba(52, 44, 35, 0.58), rgba(52, 44, 35, 0.58));
+  background-position: 
+    left top,
+    right top,
+    28px 0px;
+  background-repeat: 
+    no-repeat,
+    no-repeat,
+    no-repeat;
+  background-size: 
+    28px 100%,
+    28px 100%,
+    calc(100% - 56px) 100%;
+  padding: 0 16px;
+  min-height: 28px;
+  border: none;
 }
 
 
