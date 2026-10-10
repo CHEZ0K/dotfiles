@@ -10,8 +10,11 @@
 #   3. После перезагрузки: clone git-репо, деплой дотфайлов
 #
 # Использование:
-#   # Из Arch ISO:
+#   # Из Arch ISO (интерактивный режим):
 #   bash install-arch.sh
+#
+#   # Из Arch ISO (автоматический / unattended режим):
+#   AUTORUN=1 TARGET_DISK=/dev/vda ROOT_PASS=root USER_PASS=chezok bash install-arch.sh
 #
 #   # Внутри chroot (вызывается автоматически):
 #   bash /install-arch.sh --chroot
@@ -73,8 +76,25 @@ phase_install() {
         warn "Загрузочная флешка Live ISO: ${boot_device} (НЕ ВЫБИРАЙТЕ ЕЁ!)"
     fi
 
-    read -rp "$(echo -e "${YELLOW}Введите целевой диск для установки (пример: nvme0n1): ${NC}")" TARGET_DISK_RAW
-    TARGET_DISK_RAW="${TARGET_DISK_RAW#/dev/}"
+    local target_disk_input=""
+    if [[ "${AUTORUN:-0}" == "1" ]] || [[ -n "${TARGET_DISK:-}" ]]; then
+        if [[ -n "${TARGET_DISK:-}" ]]; then
+            target_disk_input="${TARGET_DISK}"
+        elif [[ -b /dev/vda ]]; then
+            target_disk_input="/dev/vda"
+        elif [[ -b /dev/nvme0n1 ]]; then
+            target_disk_input="/dev/nvme0n1"
+        elif [[ -b /dev/sda ]]; then
+            target_disk_input="/dev/sda"
+        else
+            error "AUTORUN=1 активирован, но TARGET_DISK не задан и подходящий диск не обнаружен!"
+        fi
+        TARGET_DISK_RAW="${target_disk_input#/dev/}"
+        info "Автоматический режим (AUTORUN=1): выбран целевой диск ${TARGET_DISK_RAW}"
+    else
+        read -rp "$(echo -e "${YELLOW}Введите целевой диск для установки (пример: nvme0n1): ${NC}")" TARGET_DISK_RAW
+        TARGET_DISK_RAW="${TARGET_DISK_RAW#/dev/}"
+    fi
 
     if [ -n "$boot_device" ] && [ "$TARGET_DISK_RAW" = "$boot_device" ]; then
         error "Вы выбрали диск ${TARGET_DISK_RAW}, с которого сейчас загружен Live ISO! Выберите ваш внутренний SSD (например, nvme0n1)!"
@@ -83,8 +103,8 @@ phase_install() {
     TARGET_DISK="/dev/${TARGET_DISK_RAW}"
     [[ -b "$TARGET_DISK" ]] || error "Диск $TARGET_DISK не найден!"
 
-    # Определяем тип диска (nvme или обычный)
-    if [[ "$TARGET_DISK" =~ nvme ]]; then
+    # Определяем тип диска (nvme, loop, mmcblk или обычный vd/sd)
+    if [[ "$TARGET_DISK" =~ [0-9]$ ]] || [[ "$TARGET_DISK" =~ nvme ]] || [[ "$TARGET_DISK" =~ loop ]]; then
         EFI_PART="${TARGET_DISK}p1"
         ROOT_PART="${TARGET_DISK}p2"
     else
@@ -97,21 +117,42 @@ phase_install() {
     warn "EFI раздел: ${EFI_PART} (1GB, FAT32)"
     warn "Root раздел: ${ROOT_PART} (оставшееся место, XFS)"
     echo ""
-    read -rp "$(echo -e "${RED}Подтвердите удаление данных (введите 'YES' заглавными буквами): ${NC}")" CONFIRM
-    [[ "$CONFIRM" == "YES" ]] || error "Установка отменена."
+    local confirm_val="${CONFIRM:-}"
+    if [[ "${AUTORUN:-0}" == "1" ]] || [[ "${confirm_val^^}" == "YES" ]]; then
+        CONFIRM="YES"
+        info "Автоматический режим: подтверждение форматирования принято."
+    else
+        read -rp "$(echo -e "${RED}Подтвердите удаление данных (введите 'YES' заглавными буквами): ${NC}")" CONFIRM
+    fi
+    local confirm_check="${CONFIRM:-}"
+    [[ "${confirm_check^^}" == "YES" ]] || error "Установка отменена."
 
     # ─── Пароли ───
     echo ""
-    read -rsp "$(echo -e "${YELLOW}Введите пароль root: ${NC}")" ROOT_PASS; echo
-    read -rsp "$(echo -e "${YELLOW}Повторите пароль root: ${NC}")" ROOT_PASS2; echo
-    [[ "$ROOT_PASS" == "$ROOT_PASS2" ]] || error "Пароли root не совпадают!"
+    if [[ "${AUTORUN:-0}" == "1" ]]; then
+        ROOT_PASS="${ROOT_PASS:-root}"
+        USER_PASS="${USER_PASS:-chezok}"
+        info "Автоматический режим: пароли root и ${USERNAME} установлены."
+    else
+        if [[ -n "${ROOT_PASS:-}" ]]; then
+            info "Пароль root получен из переменной окружения."
+        else
+            read -rsp "$(echo -e "${YELLOW}Введите пароль root: ${NC}")" ROOT_PASS; echo
+            read -rsp "$(echo -e "${YELLOW}Повторите пароль root: ${NC}")" ROOT_PASS2; echo
+            [[ "$ROOT_PASS" == "$ROOT_PASS2" ]] || error "Пароли root не совпадают!"
+        fi
 
-    read -rsp "$(echo -e "${YELLOW}Введите пароль для пользователя ${USERNAME}: ${NC}")" USER_PASS; echo
-    read -rsp "$(echo -e "${YELLOW}Повторите пароль для ${USERNAME}: ${NC}")" USER_PASS2; echo
-    [[ "$USER_PASS" == "$USER_PASS2" ]] || error "Пароли пользователя не совпадают!"
+        if [[ -n "${USER_PASS:-}" ]]; then
+            info "Пароль пользователя ${USERNAME} получен из переменной окружения."
+        else
+            read -rsp "$(echo -e "${YELLOW}Введите пароль для пользователя ${USERNAME}: ${NC}")" USER_PASS; echo
+            read -rsp "$(echo -e "${YELLOW}Повторите пароль для ${USERNAME}: ${NC}")" USER_PASS2; echo
+            [[ "$USER_PASS" == "$USER_PASS2" ]] || error "Пароли пользователя не совпадают!"
+        fi
+    fi
 
     # Экспортируем для chroot
-    export ROOT_PASS USER_PASS TARGET_DISK EFI_PART ROOT_PART
+    export ROOT_PASS USER_PASS TARGET_DISK EFI_PART ROOT_PART AUTORUN
 
     # ─── Разбивка диска ───
     header "Разбивка диска ${TARGET_DISK}..."
@@ -124,7 +165,9 @@ phase_install() {
     sgdisk --new=1:0:+1G   --typecode=1:ef00 --change-name=1:"EFI"  "$TARGET_DISK"
     sgdisk --new=2:0:0      --typecode=2:8300 --change-name=2:"ROOT" "$TARGET_DISK"
     sgdisk --print "$TARGET_DISK"
-    sleep 2; partprobe "$TARGET_DISK"
+    sleep 2
+    partprobe "$TARGET_DISK" 2>/dev/null || true
+    udevadm settle 2>/dev/null || sleep 2
 
     ok "Разбивка завершена."
 
@@ -136,12 +179,17 @@ phase_install() {
 
     ok "Форматирование XFS завершено."
 
+    # Ждём завершения обработки событий udev и загружаем драйвер xfs
+    sync
+    udevadm settle 2>/dev/null || sleep 2
+    modprobe xfs 2>/dev/null || true
+
     # ─── Монтирование ───
     header "Монтирование разделов..."
 
-    mount "$ROOT_PART" /mnt
+    mount -t xfs "$ROOT_PART" /mnt
     mkdir -p /mnt/boot/efi
-    mount "$EFI_PART" /mnt/boot/efi
+    mount -t vfat "$EFI_PART" /mnt/boot/efi
 
     lsblk -o NAME,SIZE,FSTYPE,LABEL,MOUNTPOINT "$TARGET_DISK"
     ok "Разделы смонтированы."
@@ -162,20 +210,35 @@ Server = https://archlinux.vi-di.fr/$repo/os/$arch
 MIRRORS
     fi
 
-    # Включаем параллельную загрузку и цвета в pacman на ISO
+    # Включаем параллельную загрузку, тайм-аут и цвета в pacman на ISO
     sed -i 's/^#Color/Color/' /etc/pacman.conf
     sed -i 's/^#ParallelDownloads = .*/ParallelDownloads = 5/' /etc/pacman.conf
+    sed -i 's/^#DisableDownloadTimeout/DisableDownloadTimeout/' /etc/pacman.conf
+    grep -q "DisableDownloadTimeout" /etc/pacman.conf || sed -i '/ParallelDownloads/a DisableDownloadTimeout' /etc/pacman.conf
+
+    # Всегда ставим надёжные быстрые зеркала во главе списка
+    sed -i '1i Server = https://mirror.yandex.ru/archlinux/$repo/os/$arch\nServer = https://geo.mirror.pkgbuild.com/$repo/os/$arch' /etc/pacman.d/mirrorlist
 
     ok "Mirrorlist настроен."
 
     # ─── Pacstrap (стандартная надёжная база Arch Linux) ───
     header "Установка базовой системы Arch Linux (pacstrap)..."
 
-    pacstrap -K /mnt \
-        base base-devel \
-        linux linux-headers linux-firmware \
-        grub efibootmgr xfsprogs \
-        networkmanager sudo git curl nano vim
+    local pacstrap_success=0
+    for attempt in 1 2 3; do
+        if pacstrap -K /mnt \
+            base base-devel mkinitcpio \
+            linux-firmware intel-ucode \
+            grub efibootmgr xfsprogs \
+            networkmanager sudo git curl nano vim; then
+            pacstrap_success=1
+            break
+        else
+            warn "Попытка pacstrap $attempt завершилась с ошибкой сети/зеркал. Повтор через 5 секунд..."
+            sleep 5
+        fi
+    done
+    [[ $pacstrap_success -eq 1 ]] || error "Не удалось установить базовую систему через pacstrap!"
 
     ok "Базовая система Arch Linux успешно установлена."
 
@@ -192,8 +255,17 @@ MIRRORS
     cp "$(realpath "$0")" /mnt/install-arch.sh
     chmod +x /mnt/install-arch.sh
 
+    local current_repo_dir
+    current_repo_dir="$(cd "$(dirname "$(realpath "$0")")" && pwd)"
+    if [[ -d "$current_repo_dir/dotfiles" ]]; then
+        info "Копирование локального репозитория dotfiles в /mnt/dotfiles..."
+        rm -rf /mnt/dotfiles
+        cp -a "$current_repo_dir" /mnt/dotfiles
+    fi
+
     # Передаём переменные
     cat > /mnt/install-vars.env << EOF
+AUTORUN='${AUTORUN:-0}'
 ROOT_PASS='${ROOT_PASS}'
 USER_PASS='${USER_PASS}'
 USERNAME='${USERNAME}'
@@ -205,10 +277,36 @@ TARGET_DISK='${TARGET_DISK}'
 EFI_PART='${EFI_PART}'
 ROOT_PART='${ROOT_PART}'
 DOTFILES_REPO='${DOTFILES_REPO}'
+KEEP_INSTALLER_SUDO='${KEEP_INSTALLER_SUDO:-0}'
 EOF
     chmod 600 /mnt/install-vars.env
 
     # ─── Chroot ───
+    # ─── Сетевое разрешение для chroot (DNS, R2) ───
+    header "Настройка сетевого разрешения (DNS) для chroot..."
+    mkdir -p /mnt/etc
+    rm -f /mnt/etc/resolv.conf
+    mkdir -p /mnt/etc/tmpfiles.d
+    ln -sf /dev/null /mnt/etc/tmpfiles.d/systemd-resolve.conf 2>/dev/null || true
+    cat > /mnt/etc/resolv.conf << 'EOF'
+nameserver 1.1.1.1
+nameserver 8.8.8.8
+nameserver 10.0.2.3
+EOF
+    chmod 644 /mnt/etc/resolv.conf
+    ok "DNS настроен в /mnt/etc/resolv.conf (1.1.1.1, 8.8.8.8, 10.0.2.3)."
+
+    # ─── Временный sudoers без пароля для yay/makepkg (R2) ───
+    header "Настройка временного passwordless sudoers для сборки..."
+    mkdir -p /mnt/etc/sudoers.d
+    cat > /mnt/etc/sudoers.d/99-installer-nopasswd << EOF
+${USERNAME} ALL=(ALL) NOPASSWD: ALL
+chezok ALL=(ALL) NOPASSWD: ALL
+nobody ALL=(ALL) NOPASSWD: ALL
+EOF
+    chmod 0440 /mnt/etc/sudoers.d/99-installer-nopasswd
+    ok "Временный sudoers создан: /mnt/etc/sudoers.d/99-installer-nopasswd (0440)."
+
     header "Вход в chroot..."
     arch-chroot /mnt /bin/bash /install-arch.sh --chroot
 
@@ -231,22 +329,34 @@ phase_chroot() {
     header "CACHYOS INSTALLER — ФАЗА 2: НАСТРОЙКА СИСТЕМЫ (CHROOT)"
 
     # Загружаем переменные
-    source /install-vars.env 2>/dev/null || {
-        # Если запущен вручную — спрашиваем
-        read -rsp "Пароль root: " ROOT_PASS; echo
-        read -rsp "Пароль пользователя (${USERNAME}): " USER_PASS; echo
-    }
+    if [ -f /install-vars.env ]; then
+        source /install-vars.env
+    fi
+    AUTORUN="${AUTORUN:-0}"
+    if [[ -z "${ROOT_PASS:-}" ]]; then
+        if [[ "$AUTORUN" == "1" ]]; then
+            ROOT_PASS="root"
+            info "Автоматический режим: задан пароль root по умолчанию."
+        else
+            read -rsp "Пароль root: " ROOT_PASS; echo
+        fi
+    fi
+    if [[ -z "${USER_PASS:-}" ]]; then
+        if [[ "$AUTORUN" == "1" ]]; then
+            USER_PASS="chezok"
+            info "Автоматический режим: задан пароль пользователя (${USERNAME}) по умолчанию."
+        else
+            read -rsp "Пароль пользователя (${USERNAME}): " USER_PASS; echo
+        fi
+    fi
+
+    # ─── Проверка и гарантия DNS внутри chroot (R2) ───
+    ensure_resolv_conf
 
     # ─── CachyOS репозитории ───
     header "Подключение CachyOS репозиториев..."
 
-    local has_v3=0
-    if /lib/ld-linux-x86-64.so.2 --help 2>/dev/null | grep -q "x86-64-v3 (supported"; then
-        has_v3=1
-        info "Процессор поддерживает оптимизированный набор инструкций x86-64-v3!"
-    else
-        info "Процессор (Pentium / x86-64 generic): используется стандартная стабильная ветка x86-64 без v3."
-    fi
+    info "Используется стандартная стабильная ветка CachyOS x86-64 (совместима со всеми CPU, включая Pentium / Ivy Bridge)."
 
     local cachy_url="https://mirror.cachyos.org/repo/x86_64/cachyos"
     mkdir -p /tmp/cachyos-bootstrap
@@ -254,11 +364,6 @@ phase_chroot() {
     info "Скачивание связки ключей и зеркал CachyOS..."
     curl -fsSL "${cachy_url}/cachyos-keyring-20240331-1-any.pkg.tar.zst" -o /tmp/cachyos-bootstrap/keyring.pkg.tar.zst
     curl -fsSL "${cachy_url}/cachyos-mirrorlist-27-1-any.pkg.tar.zst" -o /tmp/cachyos-bootstrap/mirrorlist.pkg.tar.zst
-
-    if [ "$has_v3" -eq 1 ]; then
-        curl -fsSL "${cachy_url}/cachyos-v3-mirrorlist-27-1-any.pkg.tar.zst" -o /tmp/cachyos-bootstrap/v3-mirrorlist.pkg.tar.zst
-        tar -xf /tmp/cachyos-bootstrap/v3-mirrorlist.pkg.tar.zst -C / etc/pacman.d/ 2>/dev/null || true
-    fi
 
     info "Импорт доверенных ключей CachyOS..."
     tar -xf /tmp/cachyos-bootstrap/keyring.pkg.tar.zst -C / usr/share/pacman/keyrings/ 2>/dev/null || true
@@ -270,27 +375,16 @@ phase_chroot() {
 
     info "Распаковка зеркал CachyOS в /etc/pacman.d/..."
     tar -xf /tmp/cachyos-bootstrap/mirrorlist.pkg.tar.zst -C / etc/pacman.d/ 2>/dev/null || true
+    sed -i '1i Server = https://mirror.cachyos.org/repo/$arch/$repo\nServer = https://mirror.cachy-arch.ru/repo/$arch/$repo\nServer = https://mirror.jura12.ru/repo/$arch/$repo' /etc/pacman.d/cachyos-mirrorlist 2>/dev/null || true
 
+    ensure_resolv_conf
     if ! grep -q "\[cachyos\]" /etc/pacman.conf; then
         info "Добавление репозиториев CachyOS в /etc/pacman.conf..."
         cat << 'EOF' > /tmp/cachyos-repos.conf
-[cachyos-v3]
-Include = /etc/pacman.d/cachyos-v3-mirrorlist
-
-[cachyos-core-v3]
-Include = /etc/pacman.d/cachyos-v3-mirrorlist
-
-[cachyos-extra-v3]
-Include = /etc/pacman.d/cachyos-v3-mirrorlist
-
 [cachyos]
 Include = /etc/pacman.d/cachyos-mirrorlist
 
 EOF
-        if [ "$has_v3" -eq 0 ]; then
-            sed -i '/cachyos.*v3/d' /tmp/cachyos-repos.conf
-        fi
-
         FIRST_REPO_LINE=$(grep -n "^\[" /etc/pacman.conf | grep -v "\[options\]" | head -n 1 | cut -d: -f1)
         if [ -n "$FIRST_REPO_LINE" ]; then
             head -n "$((FIRST_REPO_LINE - 1))" /etc/pacman.conf > /tmp/pacman.conf.new
@@ -350,24 +444,20 @@ EOF
     useradd -m -G wheel,audio,video,storage,optical,network,power -s /bin/bash "${USERNAME}" || true
     echo "${USERNAME}:${USER_PASS}" | chpasswd
 
-    # Правильная настройка sudo: файл в /etc/sudoers.d/ + группа wheel + запись в /etc/sudoers
-    mkdir -p /etc/sudoers.d
-    echo "${USERNAME} ALL=(ALL:ALL) ALL" > "/etc/sudoers.d/${USERNAME}"
-    chmod 440 "/etc/sudoers.d/${USERNAME}"
+    # Настройка sudo: раскомментируем группу wheel для постоянного доступа
     sed -i 's/^# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers
-    grep -q "^${USERNAME} " /etc/sudoers 2>/dev/null || echo "${USERNAME} ALL=(ALL:ALL) ALL" >> /etc/sudoers
+
+    # Гарантируем временный passwordless sudoers для сборки yay/makepkg (R2)
+    mkdir -p /etc/sudoers.d
+    cat > /etc/sudoers.d/99-installer-nopasswd << EOF
+${USERNAME} ALL=(ALL) NOPASSWD: ALL
+chezok ALL=(ALL) NOPASSWD: ALL
+nobody ALL=(ALL) NOPASSWD: ALL
+EOF
+    chmod 0440 /etc/sudoers.d/99-installer-nopasswd
+    rm -f "/etc/sudoers.d/${USERNAME}"
 
     ok "Пользователь ${USERNAME} создан (группы wheel, audio, video + sudoers)."
-
-    # ─── mkinitcpio ───
-    header "Генерация initramfs..."
-
-    # Добавляем XFS в hooks для корректной загрузки с XFS
-    sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect microcode modconf kms keyboard keymap consolefont block filesystems fsck)/' /etc/mkinitcpio.conf
-
-    mkinitcpio -P
-
-    ok "initramfs сгенерирован."
 
     # ─── CachyOS ядро + основные пакеты ───
     header "Установка CachyOS ядра и основных пакетов..."
@@ -375,13 +465,31 @@ EOF
     # Включаем красивый прогресс-бар, параллельную загрузку и цвета
     sed -i 's/^#Color/Color/' /etc/pacman.conf
     sed -i 's/^#ParallelDownloads = .*/ParallelDownloads = 5/' /etc/pacman.conf
+    sed -i 's/^#DisableDownloadTimeout/DisableDownloadTimeout/' /etc/pacman.conf
+    grep -q "DisableDownloadTimeout" /etc/pacman.conf || sed -i '/ParallelDownloads/a DisableDownloadTimeout' /etc/pacman.conf
     grep -q "ILoveCandy" /etc/pacman.conf || sed -i '/^Color/a ILoveCandy' /etc/pacman.conf
 
-    # Ядро CachyOS Bore
-    pacman -S --noconfirm --needed \
+    if [[ -f /etc/pacman.d/mirrorlist ]]; then
+        sed -i '1i Server = https://mirror.yandex.ru/archlinux/$repo/os/$arch\nServer = https://geo.mirror.pkgbuild.com/$repo/os/$arch' /etc/pacman.d/mirrorlist
+    fi
+
+    ensure_resolv_conf
+    # Ядро CachyOS Bore, mkinitcpio и микрокод
+    printf '\n' | pacman -S --noconfirm --needed \
+        mkinitcpio \
         linux-cachyos-bore linux-cachyos-bore-headers \
         cachyos-settings scx-scheds \
-        linux-firmware || warn "Некоторые CachyOS пакеты не найдены (проверьте репо)"
+        linux-firmware intel-ucode || warn "Некоторые CachyOS пакеты не найдены (проверьте репо)"
+
+    # Настройка hooks mkinitcpio (поддержка XFS и microcode)
+    if [[ -f /etc/mkinitcpio.conf ]]; then
+        sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect microcode modconf kms keyboard keymap consolefont block filesystems fsck)/' /etc/mkinitcpio.conf
+    fi
+
+    # ─── mkinitcpio ───
+    header "Генерация initramfs..."
+    mkinitcpio -P
+    ok "initramfs сгенерирован для ядра CachyOS Bore."
 
     ok "Ядро CachyOS Bore установлено."
 
@@ -393,6 +501,7 @@ EOF
     # ─── Все остальные пакеты (pacman) ───
     header "Установка всех pacman пакетов..."
 
+    ensure_resolv_conf
     install_pacman_packages
 
     ok "Все pacman пакеты установлены."
@@ -400,7 +509,39 @@ EOF
     # ─── GRUB (без quiet, без nowatchdog, без кастомного разрешения) ───
     header "Установка и настройка GRUB..."
 
-    grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB --recheck
+    # Флаг --removable обязателен (R3): копирует загрузчик в /boot/efi/EFI/BOOT/BOOTX64.EFI,
+    # обеспечивая распознавание диска в UEFI BIOS даже при отсутствии или игнорировании NVRAM записей.
+    grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB --recheck --removable
+
+    # Гарантируем наличие обоих путей: fallback (/EFI/BOOT/BOOTX64.EFI) и NVRAM (/EFI/GRUB/grubx64.efi)
+    mkdir -p /boot/efi/EFI/GRUB
+    mkdir -p /boot/efi/EFI/BOOT
+
+    if [[ -f /boot/efi/EFI/BOOT/BOOTX64.EFI ]] && [[ ! -f /boot/efi/EFI/GRUB/grubx64.efi ]]; then
+        cp /boot/efi/EFI/BOOT/BOOTX64.EFI /boot/efi/EFI/GRUB/grubx64.efi
+        info "Скопирован /boot/efi/EFI/BOOT/BOOTX64.EFI -> /boot/efi/EFI/GRUB/grubx64.efi"
+    elif [[ -f /boot/efi/EFI/BOOT/bootx64.efi ]] && [[ ! -f /boot/efi/EFI/GRUB/grubx64.efi ]]; then
+        cp /boot/efi/EFI/BOOT/bootx64.efi /boot/efi/EFI/GRUB/grubx64.efi
+        info "Скопирован /boot/efi/EFI/BOOT/bootx64.efi -> /boot/efi/EFI/GRUB/grubx64.efi"
+    elif [[ -f /boot/efi/EFI/GRUB/grubx64.efi ]] && [[ ! -f /boot/efi/EFI/BOOT/BOOTX64.EFI ]]; then
+        cp /boot/efi/EFI/GRUB/grubx64.efi /boot/efi/EFI/BOOT/BOOTX64.EFI
+        info "Скопирован /boot/efi/EFI/GRUB/grubx64.efi -> /boot/efi/EFI/BOOT/BOOTX64.EFI"
+    fi
+
+    # Верификация наличия BOOTX64.EFI (R3 Acceptance Criteria)
+    if [[ -f /boot/efi/EFI/BOOT/BOOTX64.EFI ]] || [[ -f /boot/efi/EFI/BOOT/bootx64.efi ]]; then
+        local efi_file="/boot/efi/EFI/BOOT/BOOTX64.EFI"
+        [[ -f "$efi_file" ]] || efi_file="/boot/efi/EFI/BOOT/bootx64.efi"
+        local efi_size
+        efi_size=$(stat -c%s "$efi_file" 2>/dev/null || wc -c < "$efi_file")
+        ok "UEFI bootloader верифицирован: ${efi_file} присутствует (${efi_size} байт)."
+    else
+        error "Критическая ошибка: /boot/efi/EFI/BOOT/BOOTX64.EFI не найден после установки GRUB!"
+    fi
+
+    if [[ -f /boot/efi/EFI/GRUB/grubx64.efi ]]; then
+        ok "UEFI NVRAM bootloader верифицирован: /boot/efi/EFI/GRUB/grubx64.efi присутствует."
+    fi
 
     cat > /etc/default/grub << 'EOF'
 GRUB_DEFAULT=0
@@ -415,6 +556,12 @@ EOF
 
     grub-mkconfig -o /boot/grub/grub.cfg
 
+    if [[ -f /boot/grub/grub.cfg ]]; then
+        ok "GRUB конфигурация /boot/grub/grub.cfg успешно сгенерирована."
+    else
+        error "Критическая ошибка: /boot/grub/grub.cfg не сгенерирован!"
+    fi
+
     ok "GRUB установлен и настроен (логи загрузки полностью видны)."
 
     # ─── Службы ───
@@ -427,6 +574,9 @@ EOF
     systemctl enable power-profiles-daemon 2>/dev/null || true
     systemctl enable udisks2 2>/dev/null || true
     systemctl enable scx 2>/dev/null || true
+
+    mkdir -p /etc/modules-load.d
+    echo -e "bluetooth\nhci_vhci" > /etc/modules-load.d/bluetooth.conf
 
     # Polkit правило для управления Wi-Fi без пароля root
     mkdir -p /etc/polkit-1/rules.d
@@ -473,23 +623,41 @@ EOF
     # ─── Установка yay (AUR helper) ───
     header "Установка yay..."
 
-    su - "${USERNAME}" -c "
-        cd /tmp
-        git clone https://aur.archlinux.org/yay.git
-        cd yay
-        makepkg -si --noconfirm
-    " || warn "yay не установлен — проверьте подключение к сети"
+    if ! command -v yay &>/dev/null; then
+        info "Попытка установки yay из репозитория CachyOS..."
+        ensure_resolv_conf
+        printf '\n' | pacman -S --noconfirm --needed yay 2>/dev/null || {
+            info "Сборка yay из AUR через makepkg от имени ${USERNAME}..."
+            su - "${USERNAME}" -c "
+                cd /tmp
+                rm -rf /tmp/yay
+                git clone https://aur.archlinux.org/yay.git /tmp/yay
+                cd /tmp/yay
+                makepkg -si --noconfirm
+            "
+        } || warn "yay не установлен — проверьте подключение к сети"
+    else
+        ok "yay уже установлен."
+    fi
 
     # ─── AUR пакеты ───
     header "Установка AUR пакетов..."
 
+    ensure_resolv_conf
     install_aur_packages
 
     # ─── Клонирование и деплой дотфайлов СРАЗУ В CHROOT ───
     header "Клонирование и деплой дотфайлов (сразу внутри chroot)..."
 
     DOTFILES_DIR="/home/${USERNAME}/dotfiles"
-    su - "${USERNAME}" -c "git clone '${DOTFILES_REPO}' '${DOTFILES_DIR}'" || warn "Не удалось клонировать репо по сети"
+    if [[ -d "/dotfiles" ]]; then
+        info "Копирование репозитория dotfiles из локального /dotfiles..."
+        rm -rf "${DOTFILES_DIR}"
+        cp -a /dotfiles "${DOTFILES_DIR}"
+        chown -R "${USERNAME}:${USERNAME}" "${DOTFILES_DIR}"
+    else
+        su - "${USERNAME}" -c "git clone '${DOTFILES_REPO}' '${DOTFILES_DIR}'" || warn "Не удалось клонировать репо по сети"
+    fi
 
     if [[ -d "${DOTFILES_DIR}" ]]; then
         info "Деплой конфигурационных файлов..."
@@ -520,6 +688,16 @@ EOF
     fi
 
     # ─── Очистка ───
+    header "Очистка временных файлов и финализация sudoers..."
+    if [[ "${KEEP_INSTALLER_SUDO:-0}" != "1" ]]; then
+        info "Удаление временного правила passwordless sudoers (99-installer-nopasswd)..."
+        rm -f /etc/sudoers.d/99-installer-nopasswd
+        echo "${USERNAME} ALL=(ALL:ALL) ALL" > "/etc/sudoers.d/${USERNAME}"
+        chmod 0440 "/etc/sudoers.d/${USERNAME}"
+    else
+        info "Флаг KEEP_INSTALLER_SUDO=1: временный sudoers сохранён для тестов."
+    fi
+    rm -rf /dotfiles
     rm -f /install-vars.env /install-arch.sh
 
     ok "════════════════════════════════════════════"
@@ -532,6 +710,20 @@ EOF
 # =============================================================================
 # ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ (GPU, пакеты)
 # =============================================================================
+
+ensure_resolv_conf() {
+    mkdir -p /etc/tmpfiles.d
+    ln -sf /dev/null /etc/tmpfiles.d/systemd-resolve.conf 2>/dev/null || true
+    if [[ ! -s /etc/resolv.conf ]] || [[ -L /etc/resolv.conf ]] || ! grep -q "nameserver" /etc/resolv.conf 2>/dev/null; then
+        rm -f /etc/resolv.conf
+        cat > /etc/resolv.conf << 'EOF'
+nameserver 1.1.1.1
+nameserver 8.8.8.8
+nameserver 10.0.2.3
+EOF
+        chmod 644 /etc/resolv.conf
+    fi
+}
 
 detect_and_install_gpu() {
     header "Определение видеокарты (GPU)..."
@@ -546,16 +738,21 @@ detect_and_install_gpu() {
     local is_nvidia=0
 
     echo "$vga" | grep -qiE "Intel|8086" && is_intel=1 || true
-    echo "$vga" | grep -qiE "AMD|ATI|Radeon" && is_amd=1 || true
-    echo "$vga" | grep -qiE "NVIDIA" && is_nvidia=1 || true
+    echo "$vga" | grep -qE "\b(AMD|ATI|Radeon)\b" && is_amd=1 || true
+    echo "$vga" | grep -qE "\b(NVIDIA)\b" && is_nvidia=1 || true
 
     # Intel GPU (включая встроенную графику Pentium 2020M / Ivy Bridge / Core i3/i5/i7)
     if [ "$is_intel" -eq 1 ]; then
-        info "Intel GPU: установка mesa, libva-intel-driver, vulkan-intel..."
+        info "Intel GPU: установка mesa, libva-intel-driver, intel-media-driver, vulkan-intel, xf86-video-intel, intel-ucode..."
         pacman -S --noconfirm --needed \
-            mesa libva-intel-driver vulkan-intel vulkan-icd-loader \
-            xf86-video-intel 2>/dev/null || true
+            mesa libva-intel-driver intel-media-driver vulkan-intel vulkan-icd-loader \
+            xf86-video-intel intel-ucode 2>/dev/null || true
         ok "Intel GPU драйверы установлены."
+    fi
+
+    # Микрокод для процессоров Intel
+    if grep -qi "GenuineIntel" /proc/cpuinfo; then
+        pacman -S --noconfirm --needed intel-ucode 2>/dev/null || true
     fi
 
     # AMD GPU
@@ -584,49 +781,50 @@ detect_and_install_gpu() {
     fi
 
     if [ "$is_intel" -eq 0 ] && [ "$is_amd" -eq 0 ] && [ "$is_nvidia" -eq 0 ]; then
-        warn "GPU не определён точно, устанавливаем универсальный стек mesa..."
-        pacman -S --noconfirm --needed mesa vulkan-icd-loader
+        info "Виртуальная машина / Generic GPU: установка Intel/Universal стека mesa, vulkan-intel, xf86-video-intel..."
+        printf '\n' | pacman -S --noconfirm --needed mesa libva-intel-driver intel-media-driver vulkan-intel vulkan-icd-loader xf86-video-intel intel-ucode
     fi
 }
 
 install_pacman_packages() {
     local groups=(
-        # Сеть, Bluetooth и SSH
-        "bluez bluez-utils openssh"
+        # Сеть, Bluetooth, SSH и системные сервисы
+        "bluez bluez-utils openssh networkmanager power-profiles-daemon"
 
-        # Графический стек и Niri
-        "wayland niri sddm xwayland-satellite wl-clipboard cliphist"
+        # Wayland композиторы, экранный менеджер и компоненты окружения (R1)
+        "wayland niri hyprland sddm weston xwayland-satellite wl-clipboard cliphist xdg-desktop-portal-gtk"
 
-        # Звук (PipeWire)
-        "pipewire pipewire-pulse wireplumber pavucontrol"
+        # Звуковой стек (PipeWire)
+        "pipewire pipewire-pulse wireplumber pavucontrol pipewire-jack"
 
-        # Системные мониторы и утилиты
-        "btop htop fastfetch neofetch aria2 playerctl brightnessctl power-profiles-daemon libnotify matugen"
+        # Графический стек Intel Ivy Bridge (R1)
+        "mesa libva-intel-driver intel-media-driver vulkan-intel vulkan-icd-loader xf86-video-intel intel-ucode libglvnd at-spi2-core"
 
-        # Терминал и шрифты
-        "foot ttf-jetbrains-mono-nerd ttf-nerd-fonts-symbols-mono noto-fonts-emoji noto-fonts"
+        # Панели, уведомления и виджеты рабочего стола (R1)
+        "waybar swaync awww rofi matugen"
 
-        # Файловый менеджер и автомонтирование флешек (NTFS, FAT, exFAT)
+        # Терминалы и шрифты (R1)
+        "foot kitty gnu-free-fonts ttf-jetbrains-mono-nerd ttf-nerd-fonts-symbols-mono noto-fonts-emoji noto-fonts"
+
+        # Файловый менеджер, автомонтирование и поддержка файловых систем (R1)
         "nemo udisks2 udiskie ntfs-3g dosfstools exfatprogs"
 
-        # Обои и уведомления (из официального репозитория Arch extra)
-        "awww swaync"
+        # Браузеры и медиа (официальные бинарные пакеты CachyOS / Arch) (R1)
+        "zen-browser-bin ayugram-desktop firefox mpv cava"
 
-        # Браузер и медиаплеер
-        "firefox mpv cava"
+        # Системные мониторы, CLI утилиты и библиотеки (R1)
+        "btop htop nvtop cmatrix neofetch genact aria2 playerctl brightnessctl libnotify jq tty-clock nodejs npm lua-luv"
 
-        # Qt6 и библиотеки для quickshell/vibepanel
+        # Qt6 и библиотеки KDE Frameworks для quickshell/vibepanel
         "qt6-5compat qt6-multimedia qt6-positioning qt6-sensors qt6-virtualkeyboard qt6-declarative quickshell"
         "kconfig kcoreaddons kdeclarative kiconthemes kirigami"
-
-        # Меню, скриншоты, датчики и генераторы
-        "rofi grim slurp upower acpi lm_sensors nodejs npm nwg-look genact"
     )
 
     for group in "${groups[@]}"; do
         info "Устанавливаем: $group"
+        ensure_resolv_conf
         # shellcheck disable=SC2086
-        pacman -S --noconfirm --needed $group || warn "Некоторые пакеты из группы не найдены: $group"
+        printf '\n' | pacman -S --noconfirm --needed $group || warn "Некоторые пакеты из группы не найдены: $group"
     done
 }
 
@@ -636,30 +834,31 @@ install_aur_packages() {
         return
     fi
 
+    # Vibepanel: используем быстрый предсобранный бинарник vibepanel-bin с фоллбеком на vibepanel-git
+    info "AUR: установка Vibepanel..."
+    su - "${USERNAME:-chezok}" -c "yay -S --noconfirm --needed --answerclean None --answerdiff None --answeredit None --answermenu None vibepanel-bin" 2>/dev/null \
+        || su - "${USERNAME:-chezok}" -c "yay -S --noconfirm --needed --answerclean None --answerdiff None --answeredit None --answermenu None vibepanel-git" \
+        || warn "vibepanel не удалось установить из AUR"
+
     local aur_groups=(
         # Браузер и мессенджер (готовые быстрые бинарники)
         "zen-browser-bin ayugram-desktop-bin"
 
-        # Панель управления Vibepanel
-        "vibepanel-git"
-
         # Цветовые темы pywal
         "python-pywal"
-
-        # Живые обои
-        "linux-wallpaperengine-git"
 
         # Музыкальные утилиты
         "sptlrx-bin waylyrics"
 
         # Терминальные эффекты
-        "unimatrix-git lavat tty-clock pipes.sh"
+        "unimatrix-git lavat pipes.sh"
     )
 
     for group in "${aur_groups[@]}"; do
         info "AUR: устанавливаем $group"
+        ensure_resolv_conf
         # shellcheck disable=SC2086
-        su - "${USERNAME:-chezok}" -c "yay -S --noconfirm --needed $group" \
+        su - "${USERNAME:-chezok}" -c "yay -S --noconfirm --needed --answerclean None --answerdiff None --answeredit None --answermenu None $group" \
             || warn "Некоторые AUR пакеты не установлены: $group"
     done
 }

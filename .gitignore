@@ -27,3 +27,4 @@ dotfiles/ssh/
 
 # Git LFS tracking info (не игнорируем сами файлы, только атрибуты настроим отдельно)
 themes/sddm/silent.old/
+tests/build/

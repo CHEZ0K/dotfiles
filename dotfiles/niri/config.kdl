@@ -27,7 +27,7 @@ input {
 output "eDP-1" {
     mode "1920x1080@60.003"
     scale 1.5
-    backdrop-color "#04050F"
+    backdrop-color "#0a0c08"
     variable-refresh-rate on-demand=true
 
     hot-corners {
@@ -43,10 +43,6 @@ environment {
     QT_QPA_PLATFORM "wayland"
     ELECTRON_OZONE_PLATFORM_HINT "auto"
     MOZ_ENABLE_WAYLAND "1"
-    LIBVA_DRIVER_NAME "radeonsi"
-    VDPAU_DRIVER "radeonsi"
-    AMD_VULKAN_ICD "RADV"
-    RADV_PERFTEST "aco"
     mesa_glthread "true"
     MESA_SHADER_CACHE_MAX_SIZE "2G"
     NO_AT_BRIDGE "1"
@@ -167,14 +163,13 @@ animations {
 
 // ==================== АВТОЗАПУСК (AUTOSTART) ====================
 // spawn-at-startup "waybar"
-spawn-at-startup "/home/chezok/.local/bin/vibepanel"
+spawn-at-startup "vibepanel"
 spawn-at-startup "/home/chezok/.config/niri/scripts/restore-wallpaper.sh"
 // spawn-at-startup "cava-daemon"
 // spawn-at-startup "/home/chezok/.local/bin/custom-sidebar" "--daemon"
 spawn-at-startup "/home/chezok/.config/niri/scripts/wallpaper-color-watcher.sh"
 spawn-at-startup "wl-paste" "--type" "text" "--watch" "cliphist" "store"
 spawn-at-startup "wl-paste" "--type" "image" "--watch" "cliphist" "store"
-spawn-at-startup "udiskie" "--smart-tray"
 // Отключаем клиентские заголовки/декорации (titlebars) у всех окон
 prefer-no-csd
 
@@ -229,6 +224,15 @@ layer-rule {
     match namespace="custom-sidebar"
     background-effect {
         blur true
+    }
+}
+
+// Настоящая прозрачность и размытие под Vibepanel (xray false блюрит реальные окна, а не обои)
+layer-rule {
+    match namespace="^vibepanel(-(osd|toast|tooltip|.*-popover))?$"
+    background-effect {
+        blur true
+        xray false
     }
 }
 

@@ -4,7 +4,7 @@ Documentation=man:udiskie(8)
 After=graphical-session.target
 
 [Service]
-ExecStart=/usr/bin/udiskie --automount --notify --smart-tray -f nemo
+ExecStart=/usr/bin/udiskie --automount --notify --no-tray -f nemo
 Restart=always
 RestartSec=3
 
