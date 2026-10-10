@@ -356,7 +356,14 @@ phase_chroot() {
     # ─── CachyOS репозитории ───
     header "Подключение CachyOS репозиториев..."
 
-    info "Используется стандартная стабильная ветка CachyOS x86-64 (совместима со всеми CPU, включая Pentium / Ivy Bridge)."
+    # ─── Точное определение поддержки x86-64-v3 (AVX2 + FMA + BMI2) ───
+    local has_v3=0
+    if grep -qi "avx2" /proc/cpuinfo 2>/dev/null && /lib/ld-linux-x86-64.so.2 --help 2>/dev/null | grep -q "x86-64-v3 (supported"; then
+        has_v3=1
+        info "Процессор поддерживает x86-64-v3 (AVX2)! Подключаем оптимизированную ветку CachyOS v3 для максимальной скорости."
+    else
+        info "Процессор не поддерживает AVX2/v3 (Pentium 2020M / Ivy Bridge / Legacy): используется стабильная ветка CachyOS x86-64."
+    fi
 
     local cachy_url="https://mirror.cachyos.org/repo/x86_64/cachyos"
     mkdir -p /tmp/cachyos-bootstrap
@@ -364,6 +371,12 @@ phase_chroot() {
     info "Скачивание связки ключей и зеркал CachyOS..."
     curl -fsSL "${cachy_url}/cachyos-keyring-20240331-1-any.pkg.tar.zst" -o /tmp/cachyos-bootstrap/keyring.pkg.tar.zst
     curl -fsSL "${cachy_url}/cachyos-mirrorlist-27-1-any.pkg.tar.zst" -o /tmp/cachyos-bootstrap/mirrorlist.pkg.tar.zst
+
+    if [ "$has_v3" -eq 1 ]; then
+        curl -fsSL "${cachy_url}/cachyos-v3-mirrorlist-27-1-any.pkg.tar.zst" -o /tmp/cachyos-bootstrap/v3-mirrorlist.pkg.tar.zst
+        tar -xf /tmp/cachyos-bootstrap/v3-mirrorlist.pkg.tar.zst -C / etc/pacman.d/ 2>/dev/null || true
+        sed -i '1i Server = https://mirror.cachyos.org/repo/$arch_v3/$repo\nServer = https://mirror.cachy-arch.ru/repo/$arch_v3/$repo' /etc/pacman.d/cachyos-v3-mirrorlist 2>/dev/null || true
+    fi
 
     info "Импорт доверенных ключей CachyOS..."
     tar -xf /tmp/cachyos-bootstrap/keyring.pkg.tar.zst -C / usr/share/pacman/keyrings/ 2>/dev/null || true
@@ -380,11 +393,30 @@ phase_chroot() {
     ensure_resolv_conf
     if ! grep -q "\[cachyos\]" /etc/pacman.conf; then
         info "Добавление репозиториев CachyOS в /etc/pacman.conf..."
-        cat << 'EOF' > /tmp/cachyos-repos.conf
+        if [ "$has_v3" -eq 1 ]; then
+            cat << 'EOF' > /tmp/cachyos-repos.conf
+[cachyos-v3]
+Include = /etc/pacman.d/cachyos-v3-mirrorlist
+
+[cachyos-core-v3]
+Include = /etc/pacman.d/cachyos-v3-mirrorlist
+
+[cachyos-extra-v3]
+Include = /etc/pacman.d/cachyos-v3-mirrorlist
+
 [cachyos]
 Include = /etc/pacman.d/cachyos-mirrorlist
 
 EOF
+            sed -i 's/^Architecture =.*/Architecture = auto x86_64_v3/' /etc/pacman.conf
+        else
+            cat << 'EOF' > /tmp/cachyos-repos.conf
+[cachyos]
+Include = /etc/pacman.d/cachyos-mirrorlist
+
+EOF
+        fi
+
         FIRST_REPO_LINE=$(grep -n "^\[" /etc/pacman.conf | grep -v "\[options\]" | head -n 1 | cut -d: -f1)
         if [ -n "$FIRST_REPO_LINE" ]; then
             head -n "$((FIRST_REPO_LINE - 1))" /etc/pacman.conf > /tmp/pacman.conf.new
