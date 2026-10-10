@@ -157,6 +157,93 @@ else
 fi
 
 # -----------------------------------------------------------------------------
+# Check 15: Vibepanel Desktop Panel Installed (R1 Acceptance Criteria)
+# -----------------------------------------------------------------------------
+if pacman -Q vibepanel-bin &>/dev/null; then
+    vibe_ver=$(pacman -Q vibepanel-bin)
+    report_check "PKG_VIBEPANEL" "PASS" "Vibepanel installed: ${vibe_ver}"
+elif pacman -Q vibepanel-git &>/dev/null; then
+    vibe_ver=$(pacman -Q vibepanel-git)
+    report_check "PKG_VIBEPANEL" "PASS" "Vibepanel installed: ${vibe_ver}"
+elif pacman -Q vibepanel &>/dev/null; then
+    vibe_ver=$(pacman -Q vibepanel)
+    report_check "PKG_VIBEPANEL" "PASS" "Vibepanel installed: ${vibe_ver}"
+elif which vibepanel &>/dev/null; then
+    report_check "PKG_VIBEPANEL" "PASS" "Vibepanel binary present at $(which vibepanel)"
+else
+    report_check "PKG_VIBEPANEL" "FAIL" "vibepanel is not installed"
+fi
+
+# -----------------------------------------------------------------------------
+# Check 16: Zen Browser Installed (R1 Acceptance Criteria)
+# -----------------------------------------------------------------------------
+if pacman -Q zen-browser-bin &>/dev/null; then
+    zen_ver=$(pacman -Q zen-browser-bin)
+    report_check "PKG_ZEN_BROWSER" "PASS" "Zen browser installed: ${zen_ver}"
+elif pacman -Q zen-browser &>/dev/null; then
+    zen_ver=$(pacman -Q zen-browser)
+    report_check "PKG_ZEN_BROWSER" "PASS" "Zen browser installed: ${zen_ver}"
+elif which zen-browser &>/dev/null; then
+    report_check "PKG_ZEN_BROWSER" "PASS" "Zen browser binary present at $(which zen-browser)"
+else
+    report_check "PKG_ZEN_BROWSER" "FAIL" "zen-browser-bin is not installed"
+fi
+
+# -----------------------------------------------------------------------------
+# Check 17: AyuGram Desktop Installed (R1 Acceptance Criteria)
+# -----------------------------------------------------------------------------
+if pacman -Q ayugram-desktop &>/dev/null; then
+    ayu_ver=$(pacman -Q ayugram-desktop)
+    report_check "PKG_AYUGRAM_DESKTOP" "PASS" "AyuGram desktop installed: ${ayu_ver}"
+elif pacman -Q ayugram-desktop-bin &>/dev/null; then
+    ayu_ver=$(pacman -Q ayugram-desktop-bin)
+    report_check "PKG_AYUGRAM_DESKTOP" "PASS" "AyuGram desktop installed: ${ayu_ver}"
+elif which ayugram-desktop &>/dev/null; then
+    report_check "PKG_AYUGRAM_DESKTOP" "PASS" "AyuGram desktop binary present at $(which ayugram-desktop)"
+else
+    report_check "PKG_AYUGRAM_DESKTOP" "FAIL" "ayugram-desktop is not installed"
+fi
+
+# -----------------------------------------------------------------------------
+# Check 18: Wayland Environment Installed (niri, hyprland, waybar, sddm)
+# -----------------------------------------------------------------------------
+wayland_missing=()
+for wp in niri hyprland waybar sddm; do
+    if ! pacman -Q "$wp" &>/dev/null && ! which "$wp" &>/dev/null; then
+        wayland_missing+=("$wp")
+    fi
+done
+if [[ ${#wayland_missing[@]} -eq 0 ]]; then
+    report_check "PKG_WAYLAND_STACK" "PASS" "Wayland stack packages installed (niri, hyprland, waybar, sddm)"
+else
+    report_check "PKG_WAYLAND_STACK" "FAIL" "Missing Wayland packages: ${wayland_missing[*]}"
+fi
+
+# -----------------------------------------------------------------------------
+# Check 19: CLI Utilities Installed (fastfetch, btop)
+# -----------------------------------------------------------------------------
+cli_missing=()
+for cp in fastfetch btop; do
+    if ! pacman -Q "$cp" &>/dev/null && ! which "$cp" &>/dev/null; then
+        cli_missing+=("$cp")
+    fi
+done
+if [[ ${#cli_missing[@]} -eq 0 ]]; then
+    report_check "PKG_CLI_UTILS" "PASS" "CLI utilities installed: fastfetch, btop"
+else
+    report_check "PKG_CLI_UTILS" "FAIL" "Missing CLI utilities: ${cli_missing[*]}"
+fi
+
+# -----------------------------------------------------------------------------
+# Check 20: Intel / Mesa Graphics Driver Stack Installed (R1)
+# -----------------------------------------------------------------------------
+if pacman -Q mesa &>/dev/null && (pacman -Q vulkan-intel &>/dev/null || pacman -Q vulkan-radeon &>/dev/null || pacman -Q vulkan-icd-loader &>/dev/null); then
+    report_check "PKG_GRAPHICS_INTEL" "PASS" "Mesa and Vulkan graphics stack installed"
+else
+    report_check "PKG_GRAPHICS_INTEL" "FAIL" "mesa or vulkan graphics stack is missing"
+fi
+
+# -----------------------------------------------------------------------------
 # Summary and Final Verdict
 # -----------------------------------------------------------------------------
 echo ""

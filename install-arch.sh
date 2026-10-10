@@ -229,7 +229,7 @@ MIRRORS
         if pacstrap -K /mnt \
             base base-devel mkinitcpio \
             linux-firmware intel-ucode \
-            grub efibootmgr xfsprogs \
+            grub efibootmgr xfsprogs pciutils \
             networkmanager sudo git curl nano vim; then
             pacstrap_success=1
             break
@@ -793,7 +793,7 @@ detect_and_install_gpu() {
     if [ "$is_amd" -eq 1 ]; then
         info "AMD GPU: установка mesa, vulkan-radeon, libva-mesa-driver..."
         pacman -S --noconfirm --needed \
-            mesa vulkan-radeon libva-mesa-driver mesa-vdpau vulkan-icd-loader \
+            mesa vulkan-radeon libva-mesa-driver vulkan-icd-loader \
             xf86-video-amdgpu 2>/dev/null || true
         ok "AMD GPU драйверы установлены."
     fi
@@ -808,7 +808,8 @@ detect_and_install_gpu() {
             pacman -S --noconfirm --needed mesa vulkan-icd-loader 2>/dev/null || true
         else
             info "NVIDIA GPU (Turing / RTX+): установка проприетарного драйвера nvidia..."
-            pacman -S --noconfirm --needed nvidia nvidia-utils vulkan-icd-loader 2>/dev/null || true
+            pacman -S --noconfirm --needed linux-cachyos-bore-nvidia-open nvidia-utils vulkan-icd-loader 2>/dev/null \
+                || pacman -S --noconfirm --needed nvidia-open-dkms nvidia-utils vulkan-icd-loader 2>/dev/null || true
             sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 nvidia-drm.modeset=1"/' /etc/default/grub 2>/dev/null || true
         fi
         ok "NVIDIA драйверы настроены."
@@ -868,16 +869,44 @@ install_aur_packages() {
         return
     fi
 
-    # Vibepanel: используем быстрый предсобранный бинарник vibepanel-bin с фоллбеком на vibepanel-git
-    info "AUR: установка Vibepanel..."
-    su - "${USERNAME:-chezok}" -c "yay -S --noconfirm --needed --answerclean None --answerdiff None --answeredit None --answerupgrade None vibepanel-bin" 2>/dev/null \
-        || su - "${USERNAME:-chezok}" -c "yay -S --noconfirm --needed --answerclean None --answerdiff None --answeredit None --answerupgrade None vibepanel-git" \
-        || warn "vibepanel не удалось установить из AUR"
+    local yay_cmd="yay -S --noconfirm --needed --answerclean None --answerdiff None --answeredit None --answerupgrade None --mflags \"--skippgpcheck\""
 
+    # 1. Vibepanel (R1): используем быстрый предсобранный бинарник vibepanel-bin с фоллбеком на vibepanel-git
+    if pacman -Q vibepanel-bin &>/dev/null || pacman -Q vibepanel-git &>/dev/null || pacman -Q vibepanel &>/dev/null; then
+        ok "vibepanel уже установлен."
+    else
+        info "AUR: установка Vibepanel (быстрый предсобранный бинарник vibepanel-bin)..."
+        ensure_resolv_conf
+        if ! su - "${USERNAME:-chezok}" -c "$yay_cmd vibepanel-bin"; then
+            warn "vibepanel-bin не удалось установить. Попытка сборки vibepanel-git из исходников..."
+            su - "${USERNAME:-chezok}" -c "$yay_cmd vibepanel-git" \
+                || warn "vibepanel не удалось установить из AUR"
+        else
+            ok "vibepanel-bin успешно установлен."
+        fi
+    fi
+
+    # 2. Браузер и мессенджер (R1): проверяем наличие бинарников из CachyOS repo перед вызовом AUR
+    if pacman -Q zen-browser-bin &>/dev/null; then
+        ok "zen-browser-bin уже установлен (CachyOS бинарный репозиторий)."
+    else
+        info "AUR: установка zen-browser-bin..."
+        ensure_resolv_conf
+        su - "${USERNAME:-chezok}" -c "$yay_cmd zen-browser-bin" \
+            || warn "zen-browser-bin не удалось установить из AUR"
+    fi
+
+    if pacman -Q ayugram-desktop &>/dev/null || pacman -Q ayugram-desktop-bin &>/dev/null; then
+        ok "ayugram-desktop уже установлен (CachyOS бинарный репозиторий)."
+    else
+        info "AUR: установка ayugram-desktop-bin (предсобранный бинарник)..."
+        ensure_resolv_conf
+        su - "${USERNAME:-chezok}" -c "$yay_cmd ayugram-desktop-bin" \
+            || warn "ayugram-desktop-bin не удалось установить из AUR"
+    fi
+
+    # 3. Дополнительные AUR пакеты
     local aur_groups=(
-        # Браузер и мессенджер (готовые быстрые бинарники)
-        "zen-browser-bin ayugram-desktop-bin"
-
         # Цветовые темы pywal
         "python-pywal"
 
@@ -892,7 +921,7 @@ install_aur_packages() {
         info "AUR: устанавливаем $group"
         ensure_resolv_conf
         # shellcheck disable=SC2086
-        su - "${USERNAME:-chezok}" -c "yay -S --noconfirm --needed --answerclean None --answerdiff None --answeredit None --answerupgrade None $group" \
+        su - "${USERNAME:-chezok}" -c "$yay_cmd $group" \
             || warn "Некоторые AUR пакеты не установлены: $group"
     done
 }
