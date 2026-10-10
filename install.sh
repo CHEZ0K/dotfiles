@@ -316,9 +316,9 @@ EOF
 
     echo ""
     ok "════════════════════════════════════════════"
-    ok " УСТАНОВКА ЗАВЕРШЕНА!"
+    ok " УСТАНОВКА И НАСТРОЙКА ПОЛНОСТЬЮ ЗАВЕРШЕНЫ!"
+    ok " Все дотфайлы, темы и окружение уже разложены."
     ok " Перезагрузитесь: reboot"
-    ok " После входа выполните: bash ~/install-arch.sh --deploy"
     ok "════════════════════════════════════════════"
 }
 
@@ -1026,6 +1026,10 @@ deploy_dotfiles() {
 
     # ─── Vibepanel ───
     safe_copy "$df/vibepanel" "$cfg/vibepanel"
+    if lspci 2>/dev/null | grep -qi "Ivy Bridge\|Sandy Bridge\|Haswell"; then
+        info "Legacy Intel GPU: отключаем blur в Vibepanel для предотвращения краша Wayland (прозрачность сохранена)..."
+        sed -i 's/blur = true/blur = false/' "$cfg/vibepanel/config.toml" 2>/dev/null || true
+    fi
 
     # ─── Waybar ───
     safe_copy "$df/waybar" "$cfg/waybar"
@@ -1201,13 +1205,33 @@ deploy_sddm_theme() {
         cp -r "$src/." "$dst/"
         chmod -R 755 "$dst"
         ok "SDDM тема 'silent' установлена."
+
+        # Установка шрифтов темы SilentSDDM
+        if [[ -d "$dst/fonts" ]]; then
+            mkdir -p /usr/share/fonts
+            cp -r "$dst/fonts/"* /usr/share/fonts/ 2>/dev/null || true
+            ok "Шрифты темы SDDM установлены в /usr/share/fonts."
+        fi
     else
         warn "SDDM тема не найдена в репозитории дотфайлов."
     fi
 
+    # Фиксация дефолтной сессии Niri в состоянии SDDM
+    mkdir -p /var/lib/sddm
+    cat > /var/lib/sddm/state.conf << 'EOF'
+[Last]
+Session=/usr/share/wayland-sessions/niri.desktop
+User=chezok
+EOF
+    chmod 644 /var/lib/sddm/state.conf
+
     # Конфигурация SDDM
     mkdir -p /etc/sddm.conf.d
     cat > /etc/sddm.conf.d/default.conf << 'EOF'
+[Autologin]
+Session=niri.desktop
+User=chezok
+
 [Theme]
 Current=silent
 CursorTheme=Furina
@@ -1220,7 +1244,7 @@ GreeterEnvironment=QML2_IMPORT_PATH=/usr/share/sddm/themes/silent/components/,QT
 CompositorCommand=weston --shell=kiosk
 SessionDir=/usr/share/wayland-sessions
 EOF
-    ok "SDDM конфиг применён."
+    ok "SDDM конфиг применён (дефолтная сессия: Niri)."
 }
 
 deploy_zen_css() {
@@ -1259,12 +1283,27 @@ deploy_grub_theme() {
     if [[ -d "$src" ]]; then
         mkdir -p "$dst"
         cp -r "$src/." "$dst/"
-        if ! grep -q "^GRUB_THEME=" /etc/default/grub; then
-            echo "GRUB_THEME=\"/boot/grub/themes/asuka/theme.txt\"" >> /etc/default/grub
-        else
-            sed -i 's|^#\?GRUB_THEME=.*|GRUB_THEME="/boot/grub/themes/asuka/theme.txt"|' /etc/default/grub
-        fi
-        grub-mkconfig -o /boot/grub/grub.cfg 2>/dev/null || true
+
+        # Исправление отсутствующих шрифтов и рамок в теме Asuka
+        sed -i 's/^terminal-box:/#terminal-box:/' "$dst/theme.txt" 2>/dev/null || true
+        sed -i 's/Terminus/JetBrains Mono/g' "$dst/theme.txt" 2>/dev/null || true
+
+        # Настройка /etc/default/grub
+        cat > /etc/default/grub << 'EOF'
+GRUB_DEFAULT=0
+GRUB_TIMEOUT=5
+GRUB_DISTRIBUTOR="Arch"
+GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3"
+GRUB_CMDLINE_LINUX=""
+GRUB_PRELOAD_MODULES="part_gpt part_msdos"
+GRUB_TIMEOUT_STYLE=menu
+GRUB_GFXMODE=1024x768,auto
+GRUB_GFXPAYLOAD_LINUX=keep
+GRUB_DISABLE_RECOVERY=true
+GRUB_THEME="/boot/grub/themes/asuka/theme.txt"
+EOF
+
+        grub-mkconfig -o /boot/grub/grub.cfg
         ok "GRUB тема Asuka установлена и активирована."
     fi
 }

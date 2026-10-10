@@ -34,12 +34,24 @@ case "$ext" in
         fi
         ;;
     *)
-        # Static image: Kill all animated daemons immediately!
-        pkill -9 -f awww-daemon 2>/dev/null || true
-        pkill -9 -f linux-wallpaperengine 2>/dev/null || true
-        pkill -x swaybg 2>/dev/null || true
-        
-        # Start lightweight swaybg (6MB RAM)
-        "$HOME/.local/bin/swaybg" -i "$wall" -m fill >/dev/null 2>&1 &
+        if command -v awww >/dev/null 2>&1; then
+            pkill -x swaybg 2>/dev/null || true
+            pkill -9 -f linux-wallpaperengine 2>/dev/null || true
+            if ! pgrep -x awww-daemon >/dev/null 2>&1; then
+                awww-daemon >/dev/null 2>&1 &
+                sleep 0.3
+            fi
+            awww img "$wall" --transition-type fade --transition-duration 0.5 >/dev/null 2>&1 &
+        elif command -v swaybg >/dev/null 2>&1; then
+            pkill -9 -f awww-daemon 2>/dev/null || true
+            pkill -9 -f linux-wallpaperengine 2>/dev/null || true
+            pkill -x swaybg 2>/dev/null || true
+            swaybg -i "$wall" -m fill >/dev/null 2>&1 &
+        elif [[ -x "$HOME/.local/bin/swaybg" ]]; then
+            pkill -9 -f awww-daemon 2>/dev/null || true
+            pkill -9 -f linux-wallpaperengine 2>/dev/null || true
+            pkill -x swaybg 2>/dev/null || true
+            "$HOME/.local/bin/swaybg" -i "$wall" -m fill >/dev/null 2>&1 &
+        fi
         ;;
 esac
