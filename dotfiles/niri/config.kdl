@@ -165,7 +165,7 @@ animations {
 // spawn-at-startup "waybar"
 spawn-at-startup "vibepanel"
 spawn-at-startup "/home/chezok/.config/niri/scripts/restore-wallpaper.sh"
-// spawn-at-startup "cava-daemon"
+spawn-at-startup "cava-daemon"
 // spawn-at-startup "/home/chezok/.local/bin/custom-sidebar" "--daemon"
 spawn-at-startup "/home/chezok/.config/niri/scripts/wallpaper-color-watcher.sh"
 spawn-at-startup "wl-paste" "--type" "text" "--watch" "cliphist" "store"
