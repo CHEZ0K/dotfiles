@@ -10,6 +10,12 @@ HIDDEN_FILE = "/tmp/cava_underbar_hidden_by_fs"
 LOCK_FILE = "/tmp/cava_underbar.lock"
 
 def main():
+    if not os.environ.get("NIRI_SOCKET"):
+        import glob
+        socks = sorted(glob.glob(f"/run/user/{os.getuid()}/niri.*.sock"), key=os.path.getmtime, reverse=True)
+        if socks:
+            os.environ["NIRI_SOCKET"] = socks[0]
+
     if not os.environ.get("NIRI_SOCKET") and "niri" not in os.environ.get("XDG_CURRENT_DESKTOP", "").lower():
         return
 

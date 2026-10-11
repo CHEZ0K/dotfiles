@@ -14,6 +14,15 @@ need jq
 [[ ! -f "$STATE_FILE" ]] && echo "0" > "$STATE_FILE"
 [[ ! -f "$HIDDEN_FILE" ]] && echo "0" > "$HIDDEN_FILE"
 
+if [[ -z "$NIRI_SOCKET" ]]; then
+    for s in $(ls -t /run/user/"$(id -u)"/niri.*.sock 2>/dev/null); do
+        if [[ -S "$s" ]]; then
+            export NIRI_SOCKET="$s"
+            break
+        fi
+    done
+fi
+
 sync_workspace() {
     if [[ -n "$NIRI_SOCKET" || "${XDG_CURRENT_DESKTOP,,}" == *"niri"* ]]; then
         local active_ws_info active_ws_id active_idx cava_win cava_id cava_ws_id
@@ -43,6 +52,12 @@ run_cava() {
     nohup foot --config /home/chezok/.config/cava/foot_cava.ini \
             --app-id="$APP_CLASS" \
             cava -p /home/chezok/.config/cava/config_underbar </dev/null >/dev/null 2>&1 &
+
+    if [[ -n "$NIRI_SOCKET" || "${XDG_CURRENT_DESKTOP,,}" == *"niri"* ]]; then
+        if ! pgrep -f "cava_niri_sync.py" >/dev/null; then
+            nohup python3 /home/chezok/.local/bin/cava_niri_sync.py </dev/null >/dev/null 2>&1 &
+        fi
+    fi
 }
 
 stop_cava() {
