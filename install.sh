@@ -584,7 +584,7 @@ GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3"
 GRUB_CMDLINE_LINUX=""
 GRUB_PRELOAD_MODULES="part_gpt part_msdos"
 GRUB_TIMEOUT_STYLE=menu
-GRUB_GFXMODE=keep
+GRUB_GFXMODE=1920x1080,1366x768,auto
 GRUB_GFXPAYLOAD_LINUX=keep
 GRUB_DISABLE_RECOVERY=true
 EOF
@@ -1285,18 +1285,32 @@ deploy_grub_theme() {
     local src="$DOTFILES_DIR/themes/grub/asuka"
     local dst="/boot/grub/themes/asuka"
 
-    if [[ -d "$src" ]]; then
+    if [[ -f "$src/install-asuka.sh" ]]; then
+        bash "$src/install-asuka.sh"
+        ok "GRUB тема Asuka настроена и активирована."
+    elif [[ -d "$src" ]]; then
         mkdir -p "$dst"
-        cp -r "$src/." "$dst/"
+        cp -a "$src"/* "$dst"/
+        rm -f "$dst/install-asuka.sh"
 
-        # Удаление сломанных terminal-* директив и центрирование элементов для любых разрешений
-        sed -i '/^terminal-/d' "$dst/theme.txt" 2>/dev/null || true
-        sed -i 's/Terminus/JetBrains Mono/g' "$dst/theme.txt" 2>/dev/null || true
-        sed -i 's/left = 25%/left = 50%-400/g' "$dst/theme.txt" 2>/dev/null || true
-        sed -i 's/left = 30%/left = 50%-240/g' "$dst/theme.txt" 2>/dev/null || true
+        if [[ -f "$dst/icons/archlinux.png" ]] && [[ ! -f "$dst/icons/cachyos.png" ]]; then
+            cp "$dst/icons/archlinux.png" "$dst/icons/cachyos.png"
+        fi
 
-        # Настройка /etc/default/grub с графической темой Asuka и авто-разрешением
-        cat > /etc/default/grub << 'EOF'
+        local detected_res=""
+        for m in /sys/class/drm/card*-*/modes; do
+            if [[ -f "$m" ]] && [[ -s "$m" ]]; then
+                detected_res=$(head -n 1 "$m")
+                break
+            fi
+        done
+
+        local target_gfxmode="1920x1080,1366x768,auto"
+        if [[ -n "$detected_res" ]]; then
+            target_gfxmode="${detected_res},1920x1080,1366x768,auto"
+        fi
+
+        cat > /etc/default/grub << EOF
 GRUB_DEFAULT=0
 GRUB_TIMEOUT=5
 GRUB_DISTRIBUTOR="CachyOS"
@@ -1304,14 +1318,17 @@ GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3"
 GRUB_CMDLINE_LINUX=""
 GRUB_PRELOAD_MODULES="part_gpt part_msdos"
 GRUB_TIMEOUT_STYLE=menu
-GRUB_GFXMODE=keep
+GRUB_GFXMODE="${target_gfxmode}"
 GRUB_GFXPAYLOAD_LINUX=keep
 GRUB_DISABLE_RECOVERY=true
 GRUB_THEME="/boot/grub/themes/asuka/theme.txt"
 EOF
 
+        sed -i 's|^GRUB_TERMINAL_OUTPUT=console|#GRUB_TERMINAL_OUTPUT=console|' /etc/default/grub 2>/dev/null || true
+        sed -i 's|^GRUB_TERMINAL_INPUT=console|#GRUB_TERMINAL_INPUT=console|' /etc/default/grub 2>/dev/null || true
+
         grub-mkconfig -o /boot/grub/grub.cfg
-        ok "GRUB тема Asuka настроена и активирована."
+        ok "GRUB тема Asuka настроена и активирована (разрешение: ${target_gfxmode})."
     fi
 }
 

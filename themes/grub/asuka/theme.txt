@@ -26,7 +26,7 @@ desktop-color: "#1c1f24"
 
 + image {
   top = 0%
-  left = 50%-400
+  left = 25%
   width = 800
   height = 314
   file = "logo.png"
@@ -34,7 +34,7 @@ desktop-color: "#1c1f24"
 
 + image {
   top = 100%-80
-  left = 50%-240
+  left = 30%
   width = 480
   height = 42
   file = "info.png"
