@@ -35,27 +35,46 @@ fi
 # 4. Определение разрешения экрана
 DETECTED_RES=""
 for m in /sys/class/drm/card*-*/modes; do
-    if [[ -f "$m" ]] && [[ -s "$m" ]]; then
-        DETECTED_RES=$(head -n 1 "$m")
+    res="$(head -n 1 "$m" 2>/dev/null || true)"
+    if [[ -n "$res" ]]; then
+        DETECTED_RES="$res"
         break
     fi
 done
 
 if [[ -n "$DETECTED_RES" ]]; then
-    TARGET_GFXMODE="${DETECTED_RES},1920x1080,1366x768,auto"
+    TARGET_GFXMODE="${DETECTED_RES},auto"
     echo "Определено нативное разрешение дисплея: ${DETECTED_RES}"
 else
-    TARGET_GFXMODE="1920x1080,1366x768,auto"
+    TARGET_GFXMODE="auto"
     echo "Нативное разрешение не определено, используется: ${TARGET_GFXMODE}"
 fi
 
-# 5. Бэкап /etc/default/grub
+# 5. Определение шрифта для GRUB_FONT (критично для UEFI и GRUB 2.12)
+TARGET_FONT=""
+if [[ -f "${THEME_DEST}/JetBrainsMono_20.pf2" ]]; then
+    TARGET_FONT="${THEME_DEST}/JetBrainsMono_20.pf2"
+elif [[ -f "/boot/grub/fonts/unicode.pf2" ]]; then
+    TARGET_FONT="/boot/grub/fonts/unicode.pf2"
+fi
+
+# 6. Копирование шрифта unicode на ESP-раздел в качестве fallback для UEFI
+if [[ -f "/boot/grub/fonts/unicode.pf2" ]]; then
+    for esp_dir in /boot/efi/EFI/BOOT/fonts /boot/efi/EFI/fonts /boot/efi/fonts /boot/efi/grub/fonts /boot/EFI/BOOT/fonts /boot/EFI/fonts /boot/fonts; do
+        if [[ -d "$(dirname "$esp_dir")" ]]; then
+            mkdir -p "$esp_dir" 2>/dev/null || true
+            cp "/boot/grub/fonts/unicode.pf2" "${esp_dir}/unicode.pf2" 2>/dev/null || true
+        fi
+    done
+fi
+
+# 7. Бэкап /etc/default/grub
 if [[ ! -f /etc/default/grub.bak ]]; then
     cp /etc/default/grub /etc/default/grub.bak 2>/dev/null || true
     echo "Бэкап сохранен в /etc/default/grub.bak"
 fi
 
-# 6. Настройка /etc/default/grub
+# 8. Настройка /etc/default/grub
 echo "Настройка параметров в /etc/default/grub..."
 
 # Установка GRUB_THEME
@@ -83,11 +102,22 @@ else
     echo "GRUB_GFXPAYLOAD_LINUX=keep" >> /etc/default/grub
 fi
 
+# Установка GRUB_FONT
+if [[ -n "$TARGET_FONT" ]]; then
+    if grep -q "^GRUB_FONT=" /etc/default/grub; then
+        sed -i "s|^GRUB_FONT=.*|GRUB_FONT=\"${TARGET_FONT}\"|" /etc/default/grub
+    elif grep -q "^#GRUB_FONT=" /etc/default/grub; then
+        sed -i "s|^#GRUB_FONT=.*|GRUB_FONT=\"${TARGET_FONT}\"|" /etc/default/grub
+    else
+        echo "GRUB_FONT=\"${TARGET_FONT}\"" >> /etc/default/grub
+    fi
+fi
+
 # Отключаем чисто консольный режим
 sed -i 's|^GRUB_TERMINAL_OUTPUT=console|#GRUB_TERMINAL_OUTPUT=console|' /etc/default/grub 2>/dev/null || true
 sed -i 's|^GRUB_TERMINAL_INPUT=console|#GRUB_TERMINAL_INPUT=console|' /etc/default/grub 2>/dev/null || true
 
-# 7. Генерация grub.cfg
+# 9. Генерация grub.cfg
 echo "Обновление /boot/grub/grub.cfg..."
 grub-mkconfig -o /boot/grub/grub.cfg
 

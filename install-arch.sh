@@ -1299,15 +1299,25 @@ deploy_grub_theme() {
 
         local detected_res=""
         for m in /sys/class/drm/card*-*/modes; do
-            if [[ -f "$m" ]] && [[ -s "$m" ]]; then
-                detected_res=$(head -n 1 "$m")
+            res="$(head -n 1 "$m" 2>/dev/null || true)"
+            if [[ -n "$res" ]]; then
+                detected_res="$res"
                 break
             fi
         done
 
-        local target_gfxmode="1920x1080,1366x768,auto"
+        local target_gfxmode="auto"
         if [[ -n "$detected_res" ]]; then
-            target_gfxmode="${detected_res},1920x1080,1366x768,auto"
+            target_gfxmode="${detected_res},auto"
+        fi
+
+        if [[ -f "/boot/grub/fonts/unicode.pf2" ]]; then
+            for esp_dir in /boot/efi/EFI/BOOT/fonts /boot/efi/EFI/fonts /boot/efi/fonts /boot/efi/grub/fonts; do
+                if [[ -d "$(dirname "$esp_dir")" ]]; then
+                    mkdir -p "$esp_dir" 2>/dev/null || true
+                    cp "/boot/grub/fonts/unicode.pf2" "${esp_dir}/unicode.pf2" 2>/dev/null || true
+                fi
+            done
         fi
 
         cat > /etc/default/grub << EOF
@@ -1321,7 +1331,8 @@ GRUB_TIMEOUT_STYLE=menu
 GRUB_GFXMODE="${target_gfxmode}"
 GRUB_GFXPAYLOAD_LINUX=keep
 GRUB_DISABLE_RECOVERY=true
-GRUB_THEME="/boot/grub/themes/asuka/theme.txt"
+GRUB_FONT="${dst}/JetBrainsMono_20.pf2"
+GRUB_THEME="${dst}/theme.txt"
 EOF
 
         sed -i 's|^GRUB_TERMINAL_OUTPUT=console|#GRUB_TERMINAL_OUTPUT=console|' /etc/default/grub 2>/dev/null || true
