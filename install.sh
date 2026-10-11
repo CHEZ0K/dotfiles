@@ -1297,19 +1297,7 @@ deploy_grub_theme() {
             cp "$dst/icons/archlinux.png" "$dst/icons/cachyos.png"
         fi
 
-        local detected_res=""
-        for m in /sys/class/drm/card*-*/modes; do
-            res="$(head -n 1 "$m" 2>/dev/null || true)"
-            if [[ -n "$res" ]]; then
-                detected_res="$res"
-                break
-            fi
-        done
-
-        local target_gfxmode="auto"
-        if [[ -n "$detected_res" ]]; then
-            target_gfxmode="${detected_res},auto"
-        fi
+        local target_gfxmode="keep"
 
         if [[ -f "/boot/grub/fonts/unicode.pf2" ]]; then
             for esp_dir in /boot/efi/EFI/BOOT/fonts /boot/efi/EFI/fonts /boot/efi/fonts /boot/efi/grub/fonts; do

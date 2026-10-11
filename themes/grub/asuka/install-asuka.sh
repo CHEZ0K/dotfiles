@@ -32,23 +32,12 @@ if [[ -f "${THEME_DEST}/icons/archlinux.png" ]] && [[ ! -f "${THEME_DEST}/icons/
     cp "${THEME_DEST}/icons/archlinux.png" "${THEME_DEST}/icons/cachyos.png"
 fi
 
-# 4. Определение разрешения экрана
-DETECTED_RES=""
-for m in /sys/class/drm/card*-*/modes; do
-    res="$(head -n 1 "$m" 2>/dev/null || true)"
-    if [[ -n "$res" ]]; then
-        DETECTED_RES="$res"
-        break
-    fi
-done
-
-if [[ -n "$DETECTED_RES" ]]; then
-    TARGET_GFXMODE="${DETECTED_RES},auto"
-    echo "Определено нативное разрешение дисплея: ${DETECTED_RES}"
-else
-    TARGET_GFXMODE="auto"
-    echo "Нативное разрешение не определено, используется: ${TARGET_GFXMODE}"
-fi
+# 4. Определение видеорежима GRUB
+# В UEFI (особенно на ноутбуках вроде Lenovo G500 / Intel Ivy Bridge) вызов SetMode()
+# с явным разрешением сбрасывает контроллер дисплея и тушит инвертор подсветки (черный экран).
+# Режим "keep" повторно использует уже активный рабочий фреймбуфер UEFI, сохраняя подсветку.
+TARGET_GFXMODE="keep"
+echo "Используется безопасный видеорежим GRUB: ${TARGET_GFXMODE}"
 
 # 5. Определение шрифта для GRUB_FONT (критично для UEFI и GRUB 2.12)
 TARGET_FONT=""
