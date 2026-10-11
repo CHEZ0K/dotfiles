@@ -1297,13 +1297,29 @@ deploy_grub_theme() {
             cp "$dst/icons/archlinux.png" "$dst/icons/cachyos.png"
         fi
 
-        local target_gfxmode="keep"
+        local detected_res=""
+        for m in /sys/class/drm/card*-*/modes; do
+            res="$(head -n 1 "$m" 2>/dev/null || true)"
+            if [[ -n "$res" ]]; then
+                detected_res="$res"
+                break
+            fi
+        done
+
+        local target_gfxmode="1920x1080,auto"
+        if [[ -n "$detected_res" ]]; then
+            target_gfxmode="${detected_res},auto"
+            if command -v magick &>/dev/null && [[ -f "${dst}/background.png" ]]; then
+                magick "${dst}/background.png" -resize "${detected_res}^" -gravity center -extent "${detected_res}" "${dst}/background.png" 2>/dev/null || true
+            fi
+        fi
 
         if [[ -f "/boot/grub/fonts/unicode.pf2" ]]; then
-            for esp_dir in /boot/efi/EFI/BOOT/fonts /boot/efi/EFI/fonts /boot/efi/fonts /boot/efi/grub/fonts; do
+            for esp_dir in /boot/efi/EFI/BOOT/fonts /boot/efi/EFI/fonts /boot/efi/fonts /boot/efi/grub/fonts /boot/EFI/BOOT/fonts; do
                 if [[ -d "$(dirname "$esp_dir")" ]]; then
                     mkdir -p "$esp_dir" 2>/dev/null || true
                     cp "/boot/grub/fonts/unicode.pf2" "${esp_dir}/unicode.pf2" 2>/dev/null || true
+                    cp -a "${dst}"/*.pf2 "${esp_dir}"/ 2>/dev/null || true
                 fi
             done
         fi
@@ -1319,7 +1335,7 @@ GRUB_TIMEOUT_STYLE=menu
 GRUB_GFXMODE="${target_gfxmode}"
 GRUB_GFXPAYLOAD_LINUX=keep
 GRUB_DISABLE_RECOVERY=true
-GRUB_FONT="${dst}/JetBrainsMono_20.pf2"
+GRUB_FONT="/boot/grub/fonts/unicode.pf2"
 GRUB_THEME="${dst}/theme.txt"
 EOF
 

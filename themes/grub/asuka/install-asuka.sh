@@ -32,27 +32,46 @@ if [[ -f "${THEME_DEST}/icons/archlinux.png" ]] && [[ ! -f "${THEME_DEST}/icons/
     cp "${THEME_DEST}/icons/archlinux.png" "${THEME_DEST}/icons/cachyos.png"
 fi
 
-# 4. Определение видеорежима GRUB
-# В UEFI (особенно на ноутбуках вроде Lenovo G500 / Intel Ivy Bridge) вызов SetMode()
-# с явным разрешением сбрасывает контроллер дисплея и тушит инвертор подсветки (черный экран).
-# Режим "keep" повторно использует уже активный рабочий фреймбуфер UEFI, сохраняя подсветку.
-TARGET_GFXMODE="keep"
-echo "Используется безопасный видеорежим GRUB: ${TARGET_GFXMODE}"
+# 4. Определение разрешения экрана и адаптация фона
+DETECTED_RES=""
+for m in /sys/class/drm/card*-*/modes; do
+    res="$(head -n 1 "$m" 2>/dev/null || true)"
+    if [[ -n "$res" ]]; then
+        DETECTED_RES="$res"
+        break
+    fi
+done
 
-# 5. Определение шрифта для GRUB_FONT (критично для UEFI и GRUB 2.12)
-TARGET_FONT=""
-if [[ -f "${THEME_DEST}/JetBrainsMono_20.pf2" ]]; then
-    TARGET_FONT="${THEME_DEST}/JetBrainsMono_20.pf2"
-elif [[ -f "/boot/grub/fonts/unicode.pf2" ]]; then
-    TARGET_FONT="/boot/grub/fonts/unicode.pf2"
+if [[ -n "$DETECTED_RES" ]]; then
+    TARGET_GFXMODE="${DETECTED_RES},auto"
+    echo "Определено нативное разрешение дисплея: ${DETECTED_RES}"
+    if command -v magick &>/dev/null && [[ -f "${THEME_DEST}/background.png" ]]; then
+        echo "Адаптация фонового изображения под ${DETECTED_RES}..."
+        magick "${THEME_DEST}/background.png" -resize "${DETECTED_RES}^" -gravity center -extent "${DETECTED_RES}" "${THEME_DEST}/background.png" 2>/dev/null || true
+    fi
+else
+    TARGET_GFXMODE="1920x1080,auto"
+    echo "Нативное разрешение не определено, используется: ${TARGET_GFXMODE}"
 fi
 
-# 6. Копирование шрифта unicode на ESP-раздел в качестве fallback для UEFI
+# 5. Определение системного шрифта для GRUB_FONT
+TARGET_FONT="/boot/grub/fonts/unicode.pf2"
+if [[ ! -f "$TARGET_FONT" ]]; then
+    if [[ -f "/usr/share/grub/unicode.pf2" ]]; then
+        mkdir -p /boot/grub/fonts
+        cp /usr/share/grub/unicode.pf2 "$TARGET_FONT"
+    elif [[ -f "${THEME_DEST}/JetBrainsMono_20.pf2" ]]; then
+        TARGET_FONT="${THEME_DEST}/JetBrainsMono_20.pf2"
+    fi
+fi
+
+# 6. Копирование шрифтов на ESP-раздел в качестве fallback для UEFI
 if [[ -f "/boot/grub/fonts/unicode.pf2" ]]; then
-    for esp_dir in /boot/efi/EFI/BOOT/fonts /boot/efi/EFI/fonts /boot/efi/fonts /boot/efi/grub/fonts /boot/EFI/BOOT/fonts /boot/EFI/fonts /boot/fonts; do
+    for esp_dir in /boot/efi/EFI/BOOT/fonts /boot/efi/EFI/fonts /boot/efi/fonts /boot/efi/grub/fonts /boot/EFI/BOOT/fonts; do
         if [[ -d "$(dirname "$esp_dir")" ]]; then
             mkdir -p "$esp_dir" 2>/dev/null || true
             cp "/boot/grub/fonts/unicode.pf2" "${esp_dir}/unicode.pf2" 2>/dev/null || true
+            cp -a "${THEME_DEST}"/*.pf2 "${esp_dir}"/ 2>/dev/null || true
         fi
     done
 fi
