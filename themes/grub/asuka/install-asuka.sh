@@ -101,13 +101,12 @@ else
     echo "GRUB_GFXMODE=\"${TARGET_GFXMODE}\"" >> /etc/default/grub
 fi
 
-# Установка GRUB_GFXPAYLOAD_LINUX=keep
-if grep -q "^GRUB_GFXPAYLOAD_LINUX=" /etc/default/grub; then
-    sed -i "s|^GRUB_GFXPAYLOAD_LINUX=.*|GRUB_GFXPAYLOAD_LINUX=keep|" /etc/default/grub
-elif grep -q "^#GRUB_GFXPAYLOAD_LINUX=" /etc/default/grub; then
-    sed -i "s|^#GRUB_GFXPAYLOAD_LINUX=.*|GRUB_GFXPAYLOAD_LINUX=keep|" /etc/default/grub
-else
-    echo "GRUB_GFXPAYLOAD_LINUX=keep" >> /etc/default/grub
+# Отключаем принудительный keep (из-за него на панелях 1366x768 в GOP 1024x768 экран загрузки сжимается в маленький квадрат)
+sed -i 's|^GRUB_GFXPAYLOAD_LINUX=keep|#GRUB_GFXPAYLOAD_LINUX=keep|' /etc/default/grub 2>/dev/null || true
+
+# Отключаем мусорные пункты меню (EFI BootNext диски)
+if [[ -f /etc/grub.d/25_bli ]]; then
+    chmod -x /etc/grub.d/25_bli 2>/dev/null || true
 fi
 
 # Установка GRUB_FONT
