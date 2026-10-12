@@ -12,10 +12,14 @@ fi
 
 echo "=== 1. Очистка меню GRUB от мусора и лишних пунктов ==="
 
-# 1.1 Отключаем 25_bli (убирает записи 'EFI BootNext: EFI HDD Device', 'EFI USB Device')
+# 1.1 Отключаем 25_bli и 31_efi_bootnext (убирает мусорные записи 'EFI BootNext: EFI HDD Device', 'EFI USB Device')
 if [[ -f /etc/grub.d/25_bli ]]; then
-    echo "Отключение 25_bli (убирает дублирующиеся EFI диски)..."
+    echo "Отключение 25_bli..."
     chmod -x /etc/grub.d/25_bli
+fi
+if [[ -f /etc/grub.d/31_efi_bootnext ]]; then
+    echo "Отключение 31_efi_bootnext (убирает дублирующиеся EFI диски)..."
+    chmod -x /etc/grub.d/31_efi_bootnext
 fi
 
 # 1.2 Отключаем 30_uefi-firmware (убирает пункт 'UEFI Firmware Settings' из списка ОС)
