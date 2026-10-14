@@ -233,7 +233,7 @@ layer-rule {
 
 // Настоящая прозрачность и размытие под Vibepanel (xray false блюрит реальные окна, а не обои)
 layer-rule {
-    match namespace=r#"^vibepanel.*"#
+    match namespace="^vibepanel(-(osd|toast|tooltip|.*-popover))?$"
     background-effect {
         blur true
         xray false

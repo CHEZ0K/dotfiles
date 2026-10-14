@@ -84,7 +84,7 @@ format = "%a %d %H:%M:%S"
 show_weather = false
 
 [theme]
-mode = "dark"
+mode = "auto"
 animations = true
 ripple = true
 shadows = false
