@@ -469,7 +469,7 @@ popover.widget-menu > contents {
 .notification-popover button,
 popover label,
 popover button {
-  color: #ffffff !important;
+  color: #ffffff;
 }
 
 .popover .dim-label,
@@ -479,7 +479,7 @@ popover button {
 .quick-settings-popover .dim-label,
 .quick-settings-popover .subtitle,
 .notification-body {
-  color: rgba(255, 255, 255, 0.78) !important;
+  color: rgba(255, 255, 255, 0.78);
 }
 
 .system-popover .vp-card,
@@ -508,8 +508,8 @@ popover button {
 .quick-settings-popover button.active,
 .quick-settings-popover button:checked,
 .system-popover button.active {
-  background: @color4 !important;
-  color: #ffffff !important;
+  background: @color4;
+  color: #ffffff;
 }
 
 .battery-popover {
