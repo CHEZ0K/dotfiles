@@ -433,23 +433,83 @@ window.layer-shell-popover {
 .quick-settings-window,
 .notification-popover,
 .notification-toast-container,
+popover,
+popover > contents,
 popover.widget-menu > contents {
-  background: rgba(14, 12, 10, 0.45);
-  background-color: rgba(14, 12, 10, 0.45);
+  background: alpha(@background, 0.75);
+  background-color: alpha(@background, 0.75);
   background-image: none;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid alpha(@color4, 0.35);
   border-radius: 14px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+  color: #ffffff;
+}
+
+/* ==================== ПРИНУДИТЕЛЬНЫЙ СВЕТЛЫЙ ТЕКСТ В ПОПОВЕРАХ ==================== */
+.popover label,
+.popover button,
+.popover .material-symbol,
+.popover .material-symbols-rounded,
+.popover .icon,
+.popover .title,
+.surface-popover label,
+.surface-popover button,
+.surface-popover .icon,
+.system-popover label,
+.system-popover button,
+.system-popover .icon,
+.quick-settings-popover label,
+.quick-settings-popover button,
+.quick-settings-popover .icon,
+.calendar-popover label,
+.calendar-popover button,
+.media-popover label,
+.media-popover button,
+.notification-popover label,
+.notification-popover button,
+popover label,
+popover button {
+  color: #ffffff !important;
+}
+
+.popover .dim-label,
+.popover .subtitle,
+.popover .caption,
+.system-popover .dim-label,
+.quick-settings-popover .dim-label,
+.quick-settings-popover .subtitle,
+.notification-body {
+  color: rgba(255, 255, 255, 0.78) !important;
 }
 
 .system-popover .vp-card,
 .system-popover .system-section-card,
 .system-section-card,
 .system-expander-content,
-.system-section-card:hover {
-  background: rgba(255, 255, 255, 0.04);
-  background-color: rgba(255, 255, 255, 0.04);
+.quick-settings-popover button,
+.system-popover button {
+  background: alpha(@color1, 0.25);
+  background-color: alpha(@color1, 0.25);
+  border: 1px solid alpha(@color4, 0.25);
   border-radius: 10px;
+  color: #ffffff;
+}
+
+.system-popover .system-section-card:hover,
+.system-section-card:hover,
+.quick-settings-popover button:hover,
+.system-popover button:hover {
+  background: alpha(@color2, 0.40);
+  background-color: alpha(@color2, 0.40);
+  border-color: alpha(@color4, 0.50);
+  color: #ffffff;
+}
+
+.quick-settings-popover button.active,
+.quick-settings-popover button:checked,
+.system-popover button.active {
+  background: @color4 !important;
+  color: #ffffff !important;
 }
 
 .battery-popover {

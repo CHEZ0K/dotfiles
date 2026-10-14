@@ -27,7 +27,7 @@ input {
 output "eDP-1" {
     mode "1920x1080@60.003"
     scale 1.5
-    backdrop-color "#04050F"
+    backdrop-color "#0a0c08"
     variable-refresh-rate on-demand=true
 
     hot-corners {
@@ -233,7 +233,7 @@ layer-rule {
 
 // Настоящая прозрачность и размытие под Vibepanel (xray false блюрит реальные окна, а не обои)
 layer-rule {
-    match namespace="^vibepanel(-(osd|toast|tooltip|.*-popover))?$"
+    match namespace=r#"^vibepanel.*"#
     background-effect {
         blur true
         xray false
