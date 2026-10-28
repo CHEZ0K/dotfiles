@@ -27,7 +27,7 @@ input {
 output "eDP-1" {
     mode "1920x1080@60.003"
     scale 1.5
-    backdrop-color "#0a0c08"
+    backdrop-color "#2a2221"
     variable-refresh-rate on-demand=true
 
     hot-corners {
@@ -268,6 +268,15 @@ window-rule {
 window-rule {
     match app-id=r#"^(com\.ayugram\.desktop|AyuGram|ayugram)$"#
     block-out-from "screen-capture"
+}
+
+// Плавающие часы для рисового рабочего стола
+window-rule {
+    match app-id="rice-clock"
+    open-floating true
+    default-floating-position x=637 y=279 relative-to="top-left"
+    default-column-width { fixed 505; }
+    default-window-height { fixed 175; }
 }
 
 // Steam: все вспомогательные окна (настройки, друзья, чаты, диалоги) открывать плавающими
