@@ -5,6 +5,13 @@
 title-text: ""
 desktop-image: "background.png"
 desktop-color: "#1c1f24"
+terminal-font: "Terminus Regular 14"
+terminal-box: "terminal_box_*.png"
+terminal-left: "0"
+terminal-top: "0"
+terminal-width: "100%"
+terminal-height: "100%"
+terminal-border: "0"
 
 # Show the boot menu
 + boot_menu {
