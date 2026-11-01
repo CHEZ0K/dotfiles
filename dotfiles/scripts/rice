@@ -1,0 +1,94 @@
+#!/usr/bin/env python3
+import json
+import os
+import subprocess
+import sys
+import time
+
+def get_windows():
+    try:
+        out = subprocess.check_output(["niri", "msg", "--json", "windows"])
+        return json.loads(out)
+    except Exception:
+        return []
+
+def wait_for_new_window(known_ids, timeout=3.0):
+    start = time.time()
+    while time.time() - start < timeout:
+        time.sleep(0.05)
+        wins = get_windows()
+        for w in wins:
+            if w["id"] not in known_ids:
+                return w
+    return None
+
+def main():
+    is_tty = sys.stdin.isatty() and sys.stdout.isatty()
+    windows = get_windows()
+    focused_win = next((w for w in windows if w.get("is_focused")), None)
+    
+    cur_id = None
+    if is_tty and focused_win and focused_win.get("app_id") == "footclient":
+        cur_id = focused_win["id"]
+
+    # 1. Если запуск не из терминала, открываем первое окно (pipes.sh)
+    if cur_id is None:
+        known = {w["id"] for w in get_windows()}
+        subprocess.Popen(["footclient", "pipes.sh"])
+        w_first = wait_for_new_window(known)
+        cur_id = w_first["id"] if w_first else None
+        need_exec = False
+    else:
+        need_exec = True
+
+    # 2. Запуск cava и упаковка в колонку 1
+    known = {w["id"] for w in get_windows()}
+    subprocess.Popen(["footclient", "cava"])
+    wait_for_new_window(known)
+    if cur_id:
+        subprocess.run(["niri", "msg", "action", "focus-window", "--id", str(cur_id)])
+        subprocess.run(["niri", "msg", "action", "consume-window-into-column"])
+
+    # 3. Запуск unimatrix и упаковка в колонку 1
+    known = {w["id"] for w in get_windows()}
+    subprocess.Popen(["footclient", "unimatrix", "-n", "-s", "96", "-l", "b"])
+    wait_for_new_window(known)
+    if cur_id:
+        subprocess.run(["niri", "msg", "action", "focus-window", "--id", str(cur_id)])
+        subprocess.run(["niri", "msg", "action", "consume-window-into-column"])
+
+    # 4. Запуск lavat (открывается во 2-й колонке)
+    known = {w["id"] for w in get_windows()}
+    subprocess.Popen(["footclient", "lavat"])
+    w_lavat = wait_for_new_window(known)
+    lavat_id = w_lavat["id"] if w_lavat else None
+
+    # 5. Запуск genact и упаковка во 2-ю колонку под lavat
+    known = {w["id"] for w in get_windows()}
+    subprocess.Popen(["footclient", "genact"])
+    wait_for_new_window(known)
+    if lavat_id:
+        subprocess.run(["niri", "msg", "action", "focus-window", "--id", str(lavat_id)])
+        subprocess.run(["niri", "msg", "action", "consume-window-into-column"])
+
+    # 6. Запуск tty-clock (правило niri автоматически делает его плавающим в центре)
+    known = {w["id"] for w in get_windows()}
+    subprocess.Popen(["footclient", "-a", "rice-clock", "-w", "505x175", "tty-clock", "-c", "-s"])
+    w_clock = wait_for_new_window(known)
+    if w_clock and not w_clock.get("is_floating"):
+        subprocess.run(["niri", "msg", "action", "focus-window", "--id", str(w_clock["id"])])
+        subprocess.run(["niri", "msg", "action", "move-window-to-floating"])
+
+    # 7. Фокусируем верхнее окно 1-й колонки и прижимаем вид к левому краю (4x switch-preset-column-width)
+    if cur_id:
+        subprocess.run(["niri", "msg", "action", "focus-window", "--id", str(cur_id)])
+        for _ in range(4):
+            subprocess.run(["niri", "msg", "action", "switch-preset-column-width"])
+            time.sleep(0.05)
+
+    # 8. Текущий терминал превращается в pipes.sh
+    if need_exec:
+        os.execvp("pipes.sh", ["pipes.sh"])
+
+if __name__ == "__main__":
+    main()
