@@ -88,7 +88,7 @@ mode = "auto"
 animations = true
 ripple = true
 shadows = false
-blur = true
+blur = false
 
 [theme.typography]
 font_family = "JetBrainsMono Nerd Font, Adwaita Sans, FreeSans, sans-serif"
